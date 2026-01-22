@@ -1,0 +1,51 @@
+[Unit]
+Description=ARM Hypervisor Platform
+Documentation=https://github.com/arm-hypervisor/arm-hypervisor
+After=network-online.target
+Wants=network-online.target
+RequiresMountsFor=/var/lib/arm-hypervisor
+
+[Service]
+Type=exec
+User=root
+Group=root
+ExecStart=/usr/local/bin/arm-hypervisor
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StartLimitInterval=0
+
+# Security settings
+NoNewPrivileges=false
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/arm-hypervisor /var/log/arm-hypervisor /run/lxc
+ProtectHome=true
+ProtectKernelTunables=false
+ProtectKernelModules=true
+ProtectControlGroups=false
+
+# Resource limits
+LimitNOFILE=1048576
+LimitNPROC=infinity
+LimitCORE=infinity
+TasksMax=infinity
+
+# Environment
+Environment=RUST_LOG=info
+Environment=RUST_BACKTRACE=1
+EnvironmentFile=-/etc/default/arm-hypervisor
+
+# Working directory
+WorkingDirectory=/var/lib/arm-hypervisor
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=arm-hypervisor
+
+# Capabilities needed for container and network management
+AmbientCapabilities=CAP_NET_ADMIN CAP_SYS_ADMIN CAP_SETUID CAP_SETGID CAP_DAC_OVERRIDE CAP_FOWNER CAP_CHOWN
+
+[Install]
+WantedBy=multi-user.target

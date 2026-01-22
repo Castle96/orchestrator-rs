@@ -1,0 +1,38 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/api-server",
+    "crates/container-manager",
+    "crates/cluster",
+    "crates/storage",
+    "crates/network",
+    "crates/models",
+]
+
+[workspace.dependencies]
+actix-web = "4.4"
+actix-rt = "2.9"
+tokio = { version = "1.35", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1.0"
+thiserror = "1.0"
+async-trait = "0.1"
+uuid = { version = "1.6", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+config = "0.14"
+reqwest = { version = "0.11", features = ["json"] }
+tokio-tungstenite = "0.21"
+futures = "0.3"
+toml = "0.8"
+serde_yaml = "0.9"
+num_cpus = "1.16"
+gethostname = "0.4"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["ARM Hypervisor Contributors"]
+license = "MIT OR Apache-2.0"

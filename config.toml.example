@@ -1,0 +1,93 @@
+# ARM Hypervisor Platform Configuration
+# Copy this file to /etc/arm-hypervisor/config.toml or ./config.toml
+
+[server]
+host = "0.0.0.0"
+port = 8080
+workers = 4
+max_connections = 1000
+keepalive = 30
+client_timeout = 60
+
+# Uncomment to enable TLS
+# [server.tls]
+# cert_file = "/etc/ssl/certs/hypervisor.crt"
+# key_file = "/etc/ssl/private/hypervisor.key"
+# ca_file = "/etc/ssl/certs/ca.crt"
+
+[database]
+url = "sqlite:///var/lib/arm-hypervisor/database.db"
+max_connections = 10
+min_connections = 1
+acquire_timeout = 30
+idle_timeout = 600
+
+[cluster]
+node_name = "node-1"
+bind_address = "0.0.0.0"
+bind_port = 7946
+# advertise_address = "192.168.1.100"  # Optional: override auto-detected IP
+join_addresses = []  # Add other nodes: ["192.168.1.101:7946", "192.168.1.102:7946"]
+election_timeout = 5000
+heartbeat_interval = 1000
+
+[storage]
+base_path = "/var/lib/arm-hypervisor/storage"
+default_pool = "default"
+
+[[storage.pool_configs]]
+name = "default"
+storage_type = "local"
+path = "/var/lib/arm-hypervisor/storage/default"
+
+# Example NFS storage pool
+# [[storage.pool_configs]]
+# name = "nfs-storage"
+# storage_type = "nfs"
+# path = "192.168.1.200:/exports/storage"
+
+# Example CIFS storage pool
+# [[storage.pool_configs]]
+# name = "cifs-storage"
+# storage_type = "cifs"
+# path = "//fileserver.local/storage"
+# [storage.pool_configs.options]
+# username = "storage_user"
+# domain = "example.com"
+
+[network]
+default_bridge = "lxcbr0"
+bridge_prefix = "hvbr"
+ip_range = "192.168.100.0/24"
+dns_servers = ["8.8.8.8", "8.8.4.4"]
+firewall_enabled = true
+
+[logging]
+level = "info"
+format = "json"
+file = "/var/log/arm-hypervisor/hypervisor.log"
+rotate = true
+max_files = 10
+max_size = "100MB"
+
+[security]
+auth_enabled = true
+# CRITICAL: DO NOT use a default or weak JWT secret in production!
+# Generate a strong secret: openssl rand -base64 32
+# It's recommended to set this via environment variable: JWT_SECRET
+# jwt_secret = "REPLACE-WITH-STRONG-SECRET-AT-LEAST-32-CHARS"
+# Or better yet, set via environment variable and leave this commented:
+jwt_expiry = 86400  # 24 hours in seconds
+api_keys = [
+    # "api-key-1",
+    # "api-key-2"
+]
+# WARNING: cors_origins = ["*"] allows all origins - NOT recommended for production
+# Specify exact origins instead:
+cors_origins = ["http://localhost:3000"]
+# For production, use specific domains:
+# cors_origins = ["https://your-domain.com", "https://admin.your-domain.com"]
+
+[security.rate_limit]
+requests_per_minute = 60
+burst_size = 10

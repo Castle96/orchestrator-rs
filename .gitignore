@@ -1,0 +1,83 @@
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# Build artifacts
+*.o
+*.so
+*.a
+*.dylib
+*.dll
+*.exe
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project specific
+/config.toml
+/config.yaml
+/config.json
+!/config.toml.example
+
+# Logs
+*.log
+/var/log/
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+.env.local
+/etc/default/arm-hypervisor
+
+# Secrets
+*.key
+*.pem
+*.crt
+secrets/
+private/
+
+# Runtime
+/var/lib/arm-hypervisor/
+/var/run/
+*.pid
+
+# Web UI
+crates/web-ui/node_modules/
+crates/web-ui/dist/
+crates/web-ui/.next/
+crates/web-ui/build/
+crates/web-ui/package-lock.json
+crates/web-ui/yarn.lock
+crates/web-ui/.vite/
+
+# Testing
+coverage/
+.coverage
+htmlcov/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# OS specific
+Thumbs.db
+.Spotlight-V100
+.Trashes
