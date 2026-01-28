@@ -437,3 +437,180 @@ pub async fn clone_from_snapshot(
         }
     }
 }
+
+// ============================================================================
+// User Management Handlers (RBAC)
+// ============================================================================
+
+#[derive(Debug, Deserialize)]
+pub struct CreateUserRequest {
+    pub username: String,
+    pub email: Option<String>,
+    pub role: crate::rbac::Role,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateUserRequest {
+    pub email: Option<String>,
+    pub role: Option<crate::rbac::Role>,
+    pub enabled: Option<bool>,
+}
+
+/// List all users
+pub async fn list_users(
+    user_store: actix_web::web::Data<std::sync::Arc<std::sync::Mutex<crate::rbac::UserStore>>>,
+) -> impl Responder {
+    info!("Listing users");
+
+    let store = user_store.lock().unwrap();
+    let users = store.list_users();
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "users": users
+    }))
+}
+
+/// Get a specific user
+pub async fn get_user(
+    path: web::Path<String>,
+    user_store: actix_web::web::Data<std::sync::Arc<std::sync::Mutex<crate::rbac::UserStore>>>,
+) -> impl Responder {
+    let username = path.into_inner();
+    info!("Getting user: {}", username);
+
+    let store = user_store.lock().unwrap();
+    match store.get_user(&username) {
+        Some(user) => HttpResponse::Ok().json(user),
+        None => HttpResponse::NotFound().json(serde_json::json!({
+            "error": format!("User not found: {}", username)
+        })),
+    }
+}
+
+/// Create a new user
+pub async fn create_user(
+    req: web::Json<CreateUserRequest>,
+    user_store: actix_web::web::Data<std::sync::Arc<std::sync::Mutex<crate::rbac::UserStore>>>,
+) -> impl Responder {
+    info!("Creating user: {}", req.username);
+
+    let user = crate::rbac::User {
+        id: Uuid::new_v4(),
+        username: req.username.clone(),
+        email: req.email.clone(),
+        role: req.role.clone(),
+        custom_permissions: vec![],
+        enabled: true,
+        created_at: chrono::Utc::now(),
+        updated_at: chrono::Utc::now(),
+    };
+
+    let mut store = user_store.lock().unwrap();
+    if store.get_user(&req.username).is_some() {
+        return HttpResponse::Conflict().json(serde_json::json!({
+            "error": format!("User already exists: {}", req.username)
+        }));
+    }
+
+    store.add_user(user.clone());
+
+    HttpResponse::Created().json(serde_json::json!({
+        "message": "User created successfully",
+        "user": user
+    }))
+}
+
+/// Update a user
+pub async fn update_user(
+    path: web::Path<String>,
+    req: web::Json<UpdateUserRequest>,
+    user_store: actix_web::web::Data<std::sync::Arc<std::sync::Mutex<crate::rbac::UserStore>>>,
+) -> impl Responder {
+    let username = path.into_inner();
+    info!("Updating user: {}", username);
+
+    let mut store = user_store.lock().unwrap();
+    let mut user = match store.get_user(&username) {
+        Some(u) => u.clone(),
+        None => {
+            return HttpResponse::NotFound().json(serde_json::json!({
+                "error": format!("User not found: {}", username)
+            }))
+        }
+    };
+
+    if let Some(email) = &req.email {
+        user.email = Some(email.clone());
+    }
+    if let Some(role) = &req.role {
+        user.role = role.clone();
+    }
+    if let Some(enabled) = req.enabled {
+        user.enabled = enabled;
+    }
+    user.updated_at = chrono::Utc::now();
+
+    match store.update_user(&username, user.clone()) {
+        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
+            "message": "User updated successfully",
+            "user": user
+        })),
+        Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": e
+        })),
+    }
+}
+
+/// Delete a user
+pub async fn delete_user_handler(
+    path: web::Path<String>,
+    user_store: actix_web::web::Data<std::sync::Arc<std::sync::Mutex<crate::rbac::UserStore>>>,
+) -> impl Responder {
+    let username = path.into_inner();
+    info!("Deleting user: {}", username);
+
+    let mut store = user_store.lock().unwrap();
+    match store.delete_user(&username) {
+        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
+            "message": format!("User '{}' deleted successfully", username)
+        })),
+        Err(e) => {
+            if e == "User not found" {
+                HttpResponse::NotFound().json(serde_json::json!({"error": e}))
+            } else {
+                HttpResponse::BadRequest().json(serde_json::json!({"error": e}))
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Audit Log Handlers
+// ============================================================================
+
+#[derive(Debug, Deserialize)]
+pub struct AuditLogQuery {
+    pub user: Option<String>,
+    pub resource_type: Option<String>,
+    pub limit: Option<usize>,
+}
+
+/// Get audit logs
+pub async fn get_audit_logs(
+    query: web::Query<AuditLogQuery>,
+    audit_logger: actix_web::web::Data<std::sync::Arc<crate::audit::AuditLogger>>,
+) -> impl Responder {
+    info!("Getting audit logs");
+
+    let logs = audit_logger.get_logs(
+        query.user.clone(),
+        None,
+        query.resource_type.clone(),
+        query.limit,
+    );
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "total": audit_logger.count(),
+        "logs": logs
+    }))
+}

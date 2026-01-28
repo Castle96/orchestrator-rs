@@ -2,16 +2,20 @@ use actix_web::{middleware::Logger, web, App, HttpServer};
 use std::path::Path;
 use std::sync::Arc;
 
+mod audit;
 mod config;
 mod handlers;
 mod middleware;
 mod observability;
+mod rbac;
 mod request_tracing;
 mod routes;
 
 use config::AppConfig;
 use middleware::{RequestLogging, SecurityHeaders, SimpleCors};
 use observability::MetricsCollector;
+use rbac::UserStore;
+use audit::AuditLogger;
 use routes::configure_routes;
 
 #[actix_web::main]
@@ -88,11 +92,17 @@ async fn main() -> std::io::Result<()> {
     
     // Create metrics collector
     let metrics_collector = Arc::new(MetricsCollector::new());
+    
+    // Create user store and audit logger
+    let user_store = Arc::new(std::sync::Mutex::new(UserStore::new()));
+    let audit_logger = Arc::new(AuditLogger::new(10000));
 
     let server = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(app_config.clone()))
             .app_data(web::Data::new(metrics_collector.clone()))
+            .app_data(web::Data::new(user_store.clone()))
+            .app_data(web::Data::new(audit_logger.clone()))
             .wrap(Logger::default())
             .wrap(SecurityHeaders)
             .wrap(request_tracing::RequestTracing::new(metrics_collector.clone()))

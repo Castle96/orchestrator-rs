@@ -42,6 +42,14 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
                 "/containers/{id}/snapshots/clone",
                 web::post().to(handlers::clone_from_snapshot),
             )
+            // User management routes (RBAC)
+            .route("/users", web::get().to(handlers::list_users))
+            .route("/users", web::post().to(handlers::create_user))
+            .route("/users/{username}", web::get().to(handlers::get_user))
+            .route("/users/{username}", web::put().to(handlers::update_user))
+            .route("/users/{username}", web::delete().to(handlers::delete_user_handler))
+            // Audit log routes
+            .route("/audit/logs", web::get().to(handlers::get_audit_logs))
             // Cluster routes
             .route("/cluster/nodes", web::get().to(handlers::list_nodes))
             .route("/cluster/join", web::post().to(handlers::join_cluster))
