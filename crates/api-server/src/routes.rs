@@ -1,6 +1,6 @@
 use actix_web::web;
 
-use crate::handlers;
+use crate::{handlers, observability};
 
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -31,6 +31,8 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     );
 
     // Add health and metrics endpoints (outside API versioning)
-    cfg.route("/health", web::get().to(handlers::health_check))
-        .route("/metrics", web::get().to(handlers::metrics));
+    cfg.route("/health", web::get().to(observability::health_check))
+        .route("/ready", web::get().to(observability::readiness_check))
+        .route("/metrics", web::get().to(observability::metrics_prometheus))
+        .route("/metrics/json", web::get().to(observability::metrics_json));
 }

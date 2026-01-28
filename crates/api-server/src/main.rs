@@ -1,13 +1,17 @@
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use std::path::Path;
+use std::sync::Arc;
 
 mod config;
 mod handlers;
 mod middleware;
+mod observability;
+mod request_tracing;
 mod routes;
 
 use config::AppConfig;
 use middleware::{RequestLogging, SecurityHeaders, SimpleCors};
+use observability::MetricsCollector;
 use routes::configure_routes;
 
 #[actix_web::main]
@@ -81,12 +85,17 @@ async fn main() -> std::io::Result<()> {
     // Create shared app data
     let server_config = app_config.server.clone();
     let _security_config = app_config.security.clone();
+    
+    // Create metrics collector
+    let metrics_collector = Arc::new(MetricsCollector::new());
 
     let server = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(app_config.clone()))
+            .app_data(web::Data::new(metrics_collector.clone()))
             .wrap(Logger::default())
             .wrap(SecurityHeaders)
+            .wrap(request_tracing::RequestTracing::new(metrics_collector.clone()))
             .wrap(RequestLogging)
             .wrap(SimpleCors)
             .configure(configure_routes)
@@ -106,31 +115,25 @@ async fn main() -> std::io::Result<()> {
         
         // Load TLS certificate and key
         let cert_file = &mut BufReader::new(File::open(&tls_config.cert_file)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, 
-                format!("Failed to open cert file: {}", e)))?);
+            .map_err(|e| std::io::Error::other(format!("Failed to open cert file: {}", e)))?);
         let key_file = &mut BufReader::new(File::open(&tls_config.key_file)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, 
-                format!("Failed to open key file: {}", e)))?);
+            .map_err(|e| std::io::Error::other(format!("Failed to open key file: {}", e)))?);
         
         let cert_chain = certs(cert_file)
             .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, 
-                format!("Failed to parse cert: {}", e)))?;
+            .map_err(|e| std::io::Error::other(format!("Failed to parse cert: {}", e)))?;
         let mut keys = pkcs8_private_keys(key_file)
             .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, 
-                format!("Failed to parse key: {}", e)))?;
+            .map_err(|e| std::io::Error::other(format!("Failed to parse key: {}", e)))?;
         
         if keys.is_empty() {
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, 
-                "No private key found in key file"));
+            return Err(std::io::Error::other("No private key found in key file"));
         }
         
         let tls_config = ServerConfig::builder()
             .with_no_client_auth()
             .with_single_cert(cert_chain, keys.remove(0).into())
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, 
-                format!("Failed to build TLS config: {}", e)))?;
+            .map_err(|e| std::io::Error::other(format!("Failed to build TLS config: {}", e)))?;
         
         server.bind_rustls_0_23(bind_address, tls_config)?
     } else {
