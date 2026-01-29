@@ -2,9 +2,11 @@ pub mod config;
 pub mod container;
 pub mod error;
 pub mod lxc;
+pub mod snapshot;
 
 pub use container::*;
 pub use error::*;
+pub use snapshot::*;
 
 #[cfg(test)]
 mod tests {

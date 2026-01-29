@@ -1,12 +1,11 @@
 use actix_web::{web, HttpResponse, Responder};
-use serde_json::json;
-use std::collections::HashMap;
+use serde::Deserialize;
 use tracing::{error, info};
 use uuid::Uuid;
 
 use ::network::{BridgeManager, NetworkError};
 use ::storage::{LocalStorageManager, SharedStorageManager, StorageError};
-use container_manager::{ContainerError, ContainerManager};
+use container_manager::{ContainerError, ContainerManager, SnapshotManager};
 use models::*;
 
 pub async fn list_containers() -> impl Responder {
@@ -270,127 +269,348 @@ pub async fn create_bridge(req: web::Json<CreateBridgeRequest>) -> impl Responde
     }
 }
 
-pub async fn health_check() -> impl Responder {
-    info!("Health check requested");
+// ============================================================================
+// Container Snapshot Handlers
+// ============================================================================
 
-    let mut status = HashMap::new();
-    let mut overall_healthy = true;
+#[derive(Debug, Deserialize)]
+pub struct CreateSnapshotRequest {
+    pub name: Option<String>,
+    pub comment: Option<String>,
+}
 
-    // Check container manager health
-    match ContainerManager::list().await {
-        Ok(_) => {
-            status.insert("container_manager", json!({"status": "healthy"}));
+#[derive(Debug, Deserialize)]
+pub struct RestoreSnapshotRequest {
+    pub snapshot_name: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CloneFromSnapshotRequest {
+    pub snapshot_name: String,
+    pub new_container_name: String,
+}
+
+/// List all snapshots for a container
+pub async fn list_snapshots(path: web::Path<String>) -> impl Responder {
+    let container_name = path.into_inner();
+    info!("Listing snapshots for container: {}", container_name);
+
+    match SnapshotManager::list(&container_name).await {
+        Ok(snapshots) => HttpResponse::Ok().json(serde_json::json!({
+            "container": container_name,
+            "snapshots": snapshots
+        })),
+        Err(ContainerError::NotFound(name)) => {
+            HttpResponse::NotFound().json(serde_json::json!({
+                "error": format!("Container not found: {}", name)
+            }))
         }
         Err(e) => {
-            status.insert(
-                "container_manager",
-                json!({
-                    "status": "unhealthy",
-                    "error": e.to_string()
-                }),
-            );
-            overall_healthy = false;
+            error!("Failed to list snapshots: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": e.to_string()
+            }))
         }
-    }
-
-    // Check network manager health
-    match BridgeManager::list().await {
-        Ok(_) => {
-            status.insert("network_manager", json!({"status": "healthy"}));
-        }
-        Err(e) => {
-            status.insert(
-                "network_manager",
-                json!({
-                    "status": "unhealthy",
-                    "error": format!("{}", e)
-                }),
-            );
-            overall_healthy = false;
-        }
-    }
-
-    let response = json!({
-        "status": if overall_healthy { "healthy" } else { "unhealthy" },
-        "timestamp": chrono::Utc::now().to_rfc3339(),
-        "version": env!("CARGO_PKG_VERSION"),
-        "services": status
-    });
-
-    if overall_healthy {
-        HttpResponse::Ok().json(response)
-    } else {
-        HttpResponse::ServiceUnavailable().json(response)
     }
 }
 
-pub async fn metrics() -> impl Responder {
-    info!("Metrics requested");
+/// Create a snapshot of a container
+pub async fn create_snapshot(
+    path: web::Path<String>,
+    req: web::Json<CreateSnapshotRequest>,
+) -> impl Responder {
+    let container_name = path.into_inner();
+    info!("Creating snapshot for container: {}", container_name);
 
-    let mut metrics = HashMap::new();
+    match SnapshotManager::create(&container_name, req.name.clone(), req.comment.clone()).await {
+        Ok(snapshot) => HttpResponse::Created().json(serde_json::json!({
+            "message": "Snapshot created successfully",
+            "snapshot": snapshot
+        })),
+        Err(ContainerError::NotFound(name)) => {
+            HttpResponse::NotFound().json(serde_json::json!({
+                "error": format!("Container not found: {}", name)
+            }))
+        }
+        Err(e) => {
+            error!("Failed to create snapshot: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": e.to_string()
+            }))
+        }
+    }
+}
 
-    // System metrics
-    if let Ok(load_avg) = sys_info::loadavg() {
-        metrics.insert("system_load_1min", json!(load_avg.one));
-        metrics.insert("system_load_5min", json!(load_avg.five));
-        metrics.insert("system_load_15min", json!(load_avg.fifteen));
+/// Restore a container from a snapshot
+pub async fn restore_snapshot(
+    path: web::Path<String>,
+    req: web::Json<RestoreSnapshotRequest>,
+) -> impl Responder {
+    let container_name = path.into_inner();
+    info!(
+        "Restoring container '{}' from snapshot '{}'",
+        container_name, req.snapshot_name
+    );
+
+    match SnapshotManager::restore(&container_name, &req.snapshot_name).await {
+        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
+            "message": format!(
+                "Container '{}' restored from snapshot '{}'",
+                container_name, req.snapshot_name
+            )
+        })),
+        Err(ContainerError::NotFound(name)) => {
+            HttpResponse::NotFound().json(serde_json::json!({
+                "error": format!("Container not found: {}", name)
+            }))
+        }
+        Err(e) => {
+            error!("Failed to restore snapshot: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": e.to_string()
+            }))
+        }
+    }
+}
+
+/// Delete a snapshot
+pub async fn delete_snapshot(path: web::Path<(String, String)>) -> impl Responder {
+    let (container_name, snapshot_name) = path.into_inner();
+    info!(
+        "Deleting snapshot '{}' for container '{}'",
+        snapshot_name, container_name
+    );
+
+    match SnapshotManager::delete(&container_name, &snapshot_name).await {
+        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
+            "message": format!("Snapshot '{}' deleted", snapshot_name)
+        })),
+        Err(ContainerError::NotFound(name)) => {
+            HttpResponse::NotFound().json(serde_json::json!({
+                "error": format!("Container not found: {}", name)
+            }))
+        }
+        Err(e) => {
+            error!("Failed to delete snapshot: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": e.to_string()
+            }))
+        }
+    }
+}
+
+/// Clone a container from a snapshot
+pub async fn clone_from_snapshot(
+    path: web::Path<String>,
+    req: web::Json<CloneFromSnapshotRequest>,
+) -> impl Responder {
+    let container_name = path.into_inner();
+    info!(
+        "Cloning container '{}' from snapshot '{}' to '{}'",
+        container_name, req.snapshot_name, req.new_container_name
+    );
+
+    match SnapshotManager::clone(&container_name, &req.snapshot_name, &req.new_container_name)
+        .await
+    {
+        Ok(_) => HttpResponse::Created().json(serde_json::json!({
+            "message": format!(
+                "Container '{}' cloned from snapshot '{}' to '{}'",
+                container_name, req.snapshot_name, req.new_container_name
+            )
+        })),
+        Err(ContainerError::NotFound(name)) => {
+            HttpResponse::NotFound().json(serde_json::json!({
+                "error": format!("Container not found: {}", name)
+            }))
+        }
+        Err(ContainerError::AlreadyExists(name)) => {
+            HttpResponse::Conflict().json(serde_json::json!({
+                "error": format!("Container already exists: {}", name)
+            }))
+        }
+        Err(e) => {
+            error!("Failed to clone from snapshot: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": e.to_string()
+            }))
+        }
+    }
+}
+
+// ============================================================================
+// User Management Handlers (RBAC)
+// ============================================================================
+
+#[derive(Debug, Deserialize)]
+pub struct CreateUserRequest {
+    pub username: String,
+    pub email: Option<String>,
+    pub role: crate::rbac::Role,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateUserRequest {
+    pub email: Option<String>,
+    pub role: Option<crate::rbac::Role>,
+    pub enabled: Option<bool>,
+}
+
+/// List all users
+pub async fn list_users(
+    user_store: actix_web::web::Data<std::sync::Arc<std::sync::Mutex<crate::rbac::UserStore>>>,
+) -> impl Responder {
+    info!("Listing users");
+
+    let store = user_store.lock().unwrap();
+    let users = store.list_users();
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "users": users
+    }))
+}
+
+/// Get a specific user
+pub async fn get_user(
+    path: web::Path<String>,
+    user_store: actix_web::web::Data<std::sync::Arc<std::sync::Mutex<crate::rbac::UserStore>>>,
+) -> impl Responder {
+    let username = path.into_inner();
+    info!("Getting user: {}", username);
+
+    let store = user_store.lock().unwrap();
+    match store.get_user(&username) {
+        Some(user) => HttpResponse::Ok().json(user),
+        None => HttpResponse::NotFound().json(serde_json::json!({
+            "error": format!("User not found: {}", username)
+        })),
+    }
+}
+
+/// Create a new user
+pub async fn create_user(
+    req: web::Json<CreateUserRequest>,
+    user_store: actix_web::web::Data<std::sync::Arc<std::sync::Mutex<crate::rbac::UserStore>>>,
+) -> impl Responder {
+    info!("Creating user: {}", req.username);
+
+    let user = crate::rbac::User {
+        id: Uuid::new_v4(),
+        username: req.username.clone(),
+        email: req.email.clone(),
+        role: req.role.clone(),
+        custom_permissions: vec![],
+        enabled: true,
+        created_at: chrono::Utc::now(),
+        updated_at: chrono::Utc::now(),
+    };
+
+    let mut store = user_store.lock().unwrap();
+    if store.get_user(&req.username).is_some() {
+        return HttpResponse::Conflict().json(serde_json::json!({
+            "error": format!("User already exists: {}", req.username)
+        }));
     }
 
-    if let Ok(mem_info) = sys_info::mem_info() {
-        metrics.insert("memory_total_kb", json!(mem_info.total));
-        metrics.insert("memory_free_kb", json!(mem_info.free));
-        metrics.insert("memory_available_kb", json!(mem_info.avail));
+    store.add_user(user.clone());
+
+    HttpResponse::Created().json(serde_json::json!({
+        "message": "User created successfully",
+        "user": user
+    }))
+}
+
+/// Update a user
+pub async fn update_user(
+    path: web::Path<String>,
+    req: web::Json<UpdateUserRequest>,
+    user_store: actix_web::web::Data<std::sync::Arc<std::sync::Mutex<crate::rbac::UserStore>>>,
+) -> impl Responder {
+    let username = path.into_inner();
+    info!("Updating user: {}", username);
+
+    let mut store = user_store.lock().unwrap();
+    let mut user = match store.get_user(&username) {
+        Some(u) => u.clone(),
+        None => {
+            return HttpResponse::NotFound().json(serde_json::json!({
+                "error": format!("User not found: {}", username)
+            }))
+        }
+    };
+
+    if let Some(email) = &req.email {
+        user.email = Some(email.clone());
     }
-
-    if let Ok(disk_info) = sys_info::disk_info() {
-        metrics.insert("disk_total_kb", json!(disk_info.total));
-        metrics.insert("disk_free_kb", json!(disk_info.free));
+    if let Some(role) = &req.role {
+        user.role = role.clone();
     }
+    if let Some(enabled) = req.enabled {
+        user.enabled = enabled;
+    }
+    user.updated_at = chrono::Utc::now();
 
-    // Container metrics
-    match ContainerManager::list().await {
-        Ok(containers) => {
-            metrics.insert("containers_total", json!(containers.len()));
+    match store.update_user(&username, user.clone()) {
+        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
+            "message": "User updated successfully",
+            "user": user
+        })),
+        Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": e
+        })),
+    }
+}
 
-            let mut running_count = 0;
-            let mut stopped_count = 0;
-            let mut error_count = 0;
+/// Delete a user
+pub async fn delete_user_handler(
+    path: web::Path<String>,
+    user_store: actix_web::web::Data<std::sync::Arc<std::sync::Mutex<crate::rbac::UserStore>>>,
+) -> impl Responder {
+    let username = path.into_inner();
+    info!("Deleting user: {}", username);
 
-            for container_name in containers {
-                match ContainerManager::status(&container_name).await {
-                    Ok(status) => match status {
-                        ContainerStatus::Running => running_count += 1,
-                        ContainerStatus::Stopped => stopped_count += 1,
-                        ContainerStatus::Error => error_count += 1,
-                        _ => {}
-                    },
-                    Err(_) => error_count += 1,
-                }
+    let mut store = user_store.lock().unwrap();
+    match store.delete_user(&username) {
+        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
+            "message": format!("User '{}' deleted successfully", username)
+        })),
+        Err(e) => {
+            if e == "User not found" {
+                HttpResponse::NotFound().json(serde_json::json!({"error": e}))
+            } else {
+                HttpResponse::BadRequest().json(serde_json::json!({"error": e}))
             }
-
-            metrics.insert("containers_running", json!(running_count));
-            metrics.insert("containers_stopped", json!(stopped_count));
-            metrics.insert("containers_error", json!(error_count));
-        }
-        Err(_) => {
-            metrics.insert("containers_total", json!(-1));
         }
     }
+}
 
-    // Network metrics
-    match BridgeManager::list().await {
-        Ok(bridges) => {
-            metrics.insert("bridges_total", json!(bridges.len()));
-        }
-        Err(_) => {
-            metrics.insert("bridges_total", json!(-1));
-        }
-    }
+// ============================================================================
+// Audit Log Handlers
+// ============================================================================
 
-    let response = json!({
-        "timestamp": chrono::Utc::now().to_rfc3339(),
-        "metrics": metrics
-    });
+#[derive(Debug, Deserialize)]
+pub struct AuditLogQuery {
+    pub user: Option<String>,
+    pub resource_type: Option<String>,
+    pub limit: Option<usize>,
+}
 
-    HttpResponse::Ok().json(response)
+/// Get audit logs
+pub async fn get_audit_logs(
+    query: web::Query<AuditLogQuery>,
+    audit_logger: actix_web::web::Data<std::sync::Arc<crate::audit::AuditLogger>>,
+) -> impl Responder {
+    info!("Getting audit logs");
+
+    let logs = audit_logger.get_logs(
+        query.user.clone(),
+        None,
+        query.resource_type.clone(),
+        query.limit,
+    );
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "total": audit_logger.count(),
+        "logs": logs
+    }))
 }
