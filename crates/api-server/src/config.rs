@@ -341,15 +341,23 @@ mod tests {
 
     #[test]
     fn test_default_config() {
-        let config = AppConfig::default();
+        let mut config = AppConfig::default();
         assert_eq!(config.server.host, "0.0.0.0");
         assert_eq!(config.server.port, 8080);
+        
+        // Default config has auth enabled but no JWT secret, which should fail validation
+        assert!(config.validate().is_err());
+        
+        // Adding a valid JWT secret should make it pass
+        config.security.jwt_secret = Some("a-very-long-secure-jwt-secret-that-is-at-least-32-characters".to_string());
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn test_config_validation() {
         let mut config = AppConfig::default();
+        // Add valid JWT secret for auth
+        config.security.jwt_secret = Some("a-very-long-secure-jwt-secret-that-is-at-least-32-characters".to_string());
 
         // Test invalid server config
         config.server.host = "".to_string();
