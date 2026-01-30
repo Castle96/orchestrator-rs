@@ -18,11 +18,21 @@
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",
     "typescript": "^5.3.3",
-    "vite": "^5.0.8"
+    "vite": "^5.0.8",
+    "eslint": "^8.48.0",
+    "eslint-config-prettier": "^9.3.0",
+    "eslint-plugin-react": "^7.33.3",
+    "eslint-plugin-react-hooks": "^4.11.0",
+    "@typescript-eslint/parser": "^6.9.0",
+    "@typescript-eslint/eslint-plugin": "^6.9.0",
+    "prettier": "^2.9.0",
+    "eslint-plugin-jsx-a11y": "^6.7.1"
   },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint 'src/**/*.{ts,tsx,js,jsx}' --max-warnings=0",
+    "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,md}'"
   }
 }

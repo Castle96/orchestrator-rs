@@ -1,0 +1,11 @@
+repos:
+  - repo: https://github.com/doublify/pre-commit-cargo
+    rev: v0.5.0
+    hooks:
+      - id: cargo-fmt
+      - id: cargo-clippy
+  - repo: https://github.com/pre-commit/mirrors-shellcheck
+    rev: v0.8.0
+    hooks:
+      - id: shellcheck
+        files: ^scripts/.*\.(sh)$

@@ -41,6 +41,9 @@ logs/
 .env.local
 /etc/default/arm-hypervisor
 
+# Dev env (local only)
+.env.dev
+
 # Secrets
 *.key
 *.pem

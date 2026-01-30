@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: crates/api-server/Dockerfile
+    image: arm-hypervisor-api:dev
+    # Environment for local/dev should be provided via docker-compose.dev.yml or an env file (.env.dev)
+    ports:
+      - "8080:8080"
+    # Runtime image: runs the built binary. For live development use `api-dev`.
+    volumes:
+      - ./config.toml.example:/app/config.toml:ro
+
+  web:
+    build:
+      context: ./crates/web-ui
+      dockerfile: Dockerfile
+    image: arm-hypervisor-web-ui:dev
+    ports:
+      - "3000:3000"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - api
+    # Bind-mount the web-ui source for live editing. Use an anonymous volume
+    # to store `node_modules` inside the container so the host `node_modules`
+    # (if any) doesn't conflict.
+    volumes:
+      - ./crates/web-ui:/app:cached
+      - web_node_modules:/app/node_modules
+    working_dir: /app
+    command: npm run dev -- --host
+    profiles:
+      - dev
+
+  api-dev:
+    image: rust:1.93
+    # Environment for local/dev should be provided via docker-compose.dev.yml or an env file (.env.dev)
+    ports:
+      - "8080:8080"
+    # Bind-mount workspace for live Rust development. This lets you edit code
+    # on the host and run `cargo run` inside the container.
+    volumes:
+      - ./:/workspace:cached
+      - ./target:/workspace/target
+      - ./config.toml:/workspace/config.toml:ro
+    working_dir: /workspace
+    command: sh -c "cargo run -p api-server"
+    profiles:
+      - dev
+
+volumes:
+  web_node_modules: {}
