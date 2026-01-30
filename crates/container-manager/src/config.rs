@@ -1,22 +1,27 @@
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use models::ContainerConfig;
 
 pub struct LxcConfig;
 
 impl LxcConfig {
-    const LXC_ROOT: &'static str = "/var/lib/lxc";
+    pub fn lxc_root() -> PathBuf {
+        std::env::var("LXC_ROOT")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from("/var/lib/lxc"))
+    }
 
     /// Generate LXC configuration file content
     pub fn generate(name: &str, config: &ContainerConfig) -> String {
+        let lxc_root = Self::lxc_root();
         let mut lxc_config = String::new();
 
         // Basic container configuration
         lxc_config.push_str(&format!("lxc.uts.name = {}\n", name));
         lxc_config.push_str("lxc.arch = arm64\n");
         lxc_config.push_str("lxc.rootfs.path = dir:\n");
-        lxc_config.push_str(&format!("lxc.rootfs.path = {}/{}/rootfs\n", Self::LXC_ROOT, name));
+        lxc_config.push_str(&format!("lxc.rootfs.path = {}/{}/rootfs\n", lxc_root.display(), name));
 
         // CPU limits
         if let Some(cpu_limit) = config.cpu_limit {
@@ -48,7 +53,7 @@ impl LxcConfig {
 
     /// Write configuration to file
     pub fn write(name: &str, config: &ContainerConfig) -> Result<()> {
-        let config_dir = Path::new(Self::LXC_ROOT).join(name);
+        let config_dir = Self::lxc_root().join(name);
         fs::create_dir_all(&config_dir)
             .context("Failed to create container directory")?;
 
@@ -62,7 +67,7 @@ impl LxcConfig {
 
     /// Read configuration from file
     pub fn read(name: &str) -> Result<String> {
-        let config_path = Path::new(Self::LXC_ROOT).join(name).join("config");
+        let config_path = Self::lxc_root().join(name).join("config");
         fs::read_to_string(&config_path)
             .context("Failed to read LXC config file")
     }

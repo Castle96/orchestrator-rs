@@ -25,7 +25,7 @@ impl ContainerManager {
         info!("Creating container: {}", name);
 
         // Create container directory structure
-        let container_dir = Path::new("/var/lib/lxc").join(name);
+        let container_dir = crate::config::LxcConfig::lxc_root().join(name);
         std::fs::create_dir_all(container_dir.join("rootfs"))
             .map_err(ContainerError::Io)?;
 
@@ -154,7 +154,7 @@ impl ContainerManager {
             memory_limit: None,
             disk_limit: None,
             network_interfaces: vec![],
-            rootfs_path: format!("/var/lib/lxc/{}/rootfs", name),
+            rootfs_path: format!("{}/rootfs", crate::config::LxcConfig::lxc_root().join(name).display()),
             environment: vec![],
         };
 

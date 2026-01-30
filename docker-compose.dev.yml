@@ -1,0 +1,12 @@
+services:
+  # Dev override: load env vars from .env.dev (not committed)
+  api:
+    env_file: .env.dev
+
+  api-dev:
+    env_file: .env.dev
+
+  web:
+    env_file: .env.dev
+
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d

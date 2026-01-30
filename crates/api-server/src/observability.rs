@@ -58,38 +58,49 @@ pub async fn health_check() -> impl Responder {
 
     let mut status = HashMap::new();
     let mut overall_healthy = true;
+    let skip_system_checks = std::env::var("SKIP_SYSTEM_CHECKS")
+        .map(|v| matches!(v.as_str(), "1" | "true" | "True" | "TRUE"))
+        .unwrap_or(false);
 
     // Check container manager health
-    match ContainerManager::list().await {
-        Ok(_) => {
-            status.insert("container_manager", json!({"status": "healthy"}));
-        }
-        Err(e) => {
-            status.insert(
-                "container_manager",
-                json!({
-                    "status": "unhealthy",
-                    "error": e.to_string()
-                }),
-            );
-            overall_healthy = false;
+    if skip_system_checks {
+        status.insert("container_manager", json!({"status": "healthy", "note": "skipped system checks in dev mode"}));
+    } else {
+        match ContainerManager::list().await {
+            Ok(_) => {
+                status.insert("container_manager", json!({"status": "healthy"}));
+            }
+            Err(e) => {
+                status.insert(
+                    "container_manager",
+                    json!({
+                        "status": "unhealthy",
+                        "error": e.to_string()
+                    }),
+                );
+                overall_healthy = false;
+            }
         }
     }
 
     // Check network manager health
-    match BridgeManager::list().await {
-        Ok(_) => {
-            status.insert("network_manager", json!({"status": "healthy"}));
-        }
-        Err(e) => {
-            status.insert(
-                "network_manager",
-                json!({
-                    "status": "unhealthy",
-                    "error": format!("{}", e)
-                }),
-            );
-            overall_healthy = false;
+    if skip_system_checks {
+        status.insert("network_manager", json!({"status": "healthy", "note": "skipped system checks in dev mode"}));
+    } else {
+        match BridgeManager::list().await {
+            Ok(_) => {
+                status.insert("network_manager", json!({"status": "healthy"}));
+            }
+            Err(e) => {
+                status.insert(
+                    "network_manager",
+                    json!({
+                        "status": "unhealthy",
+                        "error": format!("{}", e)
+                    }),
+                );
+                overall_healthy = false;
+            }
         }
     }
 
@@ -112,9 +123,13 @@ pub async fn health_check() -> impl Responder {
 pub async fn readiness_check() -> impl Responder {
     info!("Readiness check requested");
 
+    let skip_system_checks = std::env::var("SKIP_SYSTEM_CHECKS")
+        .map(|v| matches!(v.as_str(), "1" | "true" | "True" | "TRUE"))
+        .unwrap_or(false);
+
     // Check if critical services are operational
-    let container_ready = ContainerManager::list().await.is_ok();
-    let network_ready = BridgeManager::list().await.is_ok();
+    let container_ready = if skip_system_checks { true } else { ContainerManager::list().await.is_ok() };
+    let network_ready = if skip_system_checks { true } else { BridgeManager::list().await.is_ok() };
 
     if container_ready && network_ready {
         HttpResponse::Ok().json(json!({

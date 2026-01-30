@@ -186,7 +186,7 @@ impl SnapshotManager {
 
     /// Get the path to a snapshot directory
     fn get_snapshot_path(container_name: &str, snapshot_name: &str) -> PathBuf {
-        Path::new("/var/lib/lxc")
+        crate::config::LxcConfig::lxc_root().as_path()
             .join(container_name)
             .join("snaps")
             .join(snapshot_name)
@@ -228,7 +228,7 @@ mod tests {
         let path = SnapshotManager::get_snapshot_path("test-container", "snap1");
         assert_eq!(
             path,
-            PathBuf::from("/var/lib/lxc/test-container/snaps/snap1")
+            crate::config::LxcConfig::lxc_root().join("test-container").join("snaps").join("snap1")
         );
     }
 

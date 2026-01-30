@@ -1,3 +1,67 @@
+# Example configuration for ARM Hypervisor
+# Copy this to /etc/arm-hypervisor/config.toml or use as ./config.toml
+# Do NOT commit secrets to the repository; set `JWT_SECRET` via environment or `.env.dev` for local dev.
+
+[server]
+host = "0.0.0.0"
+port = 8080
+workers = 4
+max_connections = 1000
+keepalive = 30
+client_timeout = 60
+
+[database]
+url = "sqlite:///var/lib/arm-hypervisor/database.db"
+max_connections = 10
+min_connections = 1
+acquire_timeout = 30
+idle_timeout = 600
+
+[cluster]
+node_name = "node-1"
+bind_address = "0.0.0.0"
+bind_port = 7946
+join_addresses = []
+election_timeout = 5000
+heartbeat_interval = 1000
+
+[storage]
+base_path = "/var/lib/arm-hypervisor/storage"
+default_pool = "default"
+
+[[storage.pool_configs]]
+name = "default"
+storage_type = "local"
+path = "/var/lib/arm-hypervisor/storage/default"
+
+[storage.pool_configs.options]
+
+[network]
+default_bridge = "lxcbr0"
+bridge_prefix = "hvbr"
+ip_range = "192.168.100.0/24"
+dns_servers = ["8.8.8.8", "8.8.4.4"]
+firewall_enabled = true
+
+[logging]
+level = "info"
+format = "json"
+file = "/var/log/arm-hypervisor/hypervisor.log"
+rotate = true
+max_files = 10
+max_size = "100MB"
+
+[security]
+auth_enabled = true
+# jwt_secret should be provided via environment variable `JWT_SECRET` or via a local `.env.dev` file.
+# jwt_secret = "<set via environment/JWT_SECRET>"
+jwt_expiry = 86400
+api_keys = []
+cors_origins = ["http://localhost:3000"]
+
+[security.rate_limit]
+requests_per_minute = 60
+burst_size = 10
 # ARM Hypervisor Platform Configuration
 # Copy this file to /etc/arm-hypervisor/config.toml or ./config.toml
 
