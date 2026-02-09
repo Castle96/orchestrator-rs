@@ -213,4 +213,4 @@ jobs:
       - name: Run integration test against compose stack
         run: |
           # Run the integration test but prevent it from trying to start compose again
-          CI= RUN_COMPOSE_TESTS=0 cargo test -p api-server --test compose_integration -- --nocapture
+          CI=1 RUN_COMPOSE_TESTS=0 cargo test -p api-server --test compose_integration -- --nocapture
