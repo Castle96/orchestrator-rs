@@ -116,7 +116,7 @@ jobs:
           name: arm-hypervisor-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/api-server
 
-web-ui:
+  web-ui:
     name: Web UI build & lint
     runs-on: ubuntu-latest
     steps:
