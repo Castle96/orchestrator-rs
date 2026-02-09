@@ -20,12 +20,12 @@
     "typescript": "^5.3.3",
     "vite": "^5.0.8",
     "eslint": "^8.48.0",
-    "eslint-config-prettier": "^9.3.0",
+    "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-react": "^7.33.3",
-    "eslint-plugin-react-hooks": "^4.11.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
     "@typescript-eslint/parser": "^6.9.0",
     "@typescript-eslint/eslint-plugin": "^6.9.0",
-    "prettier": "^2.9.0",
+    "prettier": "^3.0.0",
     "eslint-plugin-jsx-a11y": "^6.7.1"
   },
   "scripts": {

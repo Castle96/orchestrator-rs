@@ -1,0 +1,35 @@
+[server]
+host = "127.0.0.1"
+port = 8080
+workers = 4
+
+[database]
+url = "sqlite:///tmp/arm-hypervisor-test.db"
+
+[cluster]
+node_name = "test-node"
+bind_address = "127.0.0.1"
+bind_port = 7946
+join_addresses = []
+
+[storage]
+base_path = "/tmp/arm-hypervisor-test-storage"
+default_pool = "default"
+pool_configs = [
+    { name = "default", storage_type = "local", path = "/tmp/arm-hypervisor-test-storage/default", options = {} }
+]
+
+[network]
+default_bridge = "lxcbr0"
+bridge_prefix = "hvbr"
+ip_range = "192.168.100.0/24"
+dns_servers = ["8.8.8.8", "8.8.4.4"]
+firewall_enabled = false
+
+[logging]
+level = "info"
+
+[security]
+auth_enabled = false
+api_keys = []
+cors_origins = ["*"]

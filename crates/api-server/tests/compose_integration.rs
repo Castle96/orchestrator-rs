@@ -27,7 +27,7 @@ async fn compose_dev_smoke_tests() -> Result<()> {
     if run_compose {
         // Bring up the dev compose stack using the repo compose files.
         let status = Command::new("docker")
-            .args(&["compose", "-f", "docker-compose.yml", "-f", "docker-compose.dev.yml", "up", "--build", "-d"])
+            .args(["compose", "-f", "docker-compose.yml", "-f", "docker-compose.dev.yml", "up", "--build", "-d"])
             .current_dir(&repo_root)
             .status()
             .context("failed to run docker compose up")?;
@@ -47,16 +47,13 @@ async fn compose_dev_smoke_tests() -> Result<()> {
             if Instant::now() > deadline {
                 bail!("timeout waiting for API health endpoint");
             }
-            match client.get("http://localhost:8080/health").send().await {
-                Ok(resp) => {
-                    if resp.status().is_success() {
-                        let text = resp.text().await.unwrap_or_default();
-                        if text.contains("healthy") || text.contains("skipped system checks") {
-                            break;
-                        }
+            if let Ok(resp) = client.get("http://localhost:8080/health").send().await {
+                if resp.status().is_success() {
+                    let text = resp.text().await.unwrap_or_default();
+                    if text.contains("healthy") || text.contains("skipped system checks") {
+                        break;
                     }
                 }
-                Err(_) => {}
             }
             tokio::time::sleep(Duration::from_secs(2)).await;
         }
@@ -79,7 +76,7 @@ async fn compose_dev_smoke_tests() -> Result<()> {
 
     if teardown {
         let _ = Command::new("docker")
-            .args(&["compose", "-f", "docker-compose.yml", "-f", "docker-compose.dev.yml", "down"])
+            .args(["compose", "-f", "docker-compose.yml", "-f", "docker-compose.dev.yml", "down"])
             .current_dir(&repo_root)
             .status();
     }

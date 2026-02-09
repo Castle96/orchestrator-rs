@@ -236,12 +236,63 @@ impl AppConfig {
         // Merge configurations (file overrides defaults, env overrides file)
         self.server.host = file_config.server.host;
         self.server.port = file_config.server.port;
+        self.server.workers = file_config.server.workers.or(self.server.workers);
+        self.server.max_connections = file_config
+            .server
+            .max_connections
+            .or(self.server.max_connections);
+        self.server.keepalive = file_config.server.keepalive.or(self.server.keepalive);
+        self.server.client_timeout = file_config
+            .server
+            .client_timeout
+            .or(self.server.client_timeout);
+        self.server.tls = file_config.server.tls.or(self.server.tls.clone());
+
         self.database.url = file_config.database.url;
+        self.database.max_connections = file_config
+            .database
+            .max_connections
+            .or(self.database.max_connections);
+        self.database.min_connections = file_config
+            .database
+            .min_connections
+            .or(self.database.min_connections);
+        self.database.acquire_timeout = file_config
+            .database
+            .acquire_timeout
+            .or(self.database.acquire_timeout);
+        self.database.idle_timeout = file_config
+            .database
+            .idle_timeout
+            .or(self.database.idle_timeout);
+
         self.cluster = file_config.cluster;
+
         self.storage = file_config.storage;
         self.network = file_config.network;
-        self.logging = file_config.logging;
-        self.security = file_config.security;
+
+        self.logging.level = file_config.logging.level;
+        self.logging.format = file_config.logging.format.or(self.logging.format.clone());
+        self.logging.file = file_config.logging.file.or(self.logging.file.clone());
+        self.logging.rotate = file_config.logging.rotate.or(self.logging.rotate);
+        self.logging.max_files = file_config.logging.max_files.or(self.logging.max_files);
+        self.logging.max_size = file_config
+            .logging
+            .max_size
+            .or(self.logging.max_size.clone());
+
+        self.security.auth_enabled = file_config.security.auth_enabled;
+        self.security.jwt_secret = file_config
+            .security
+            .jwt_secret
+            .or(self.security.jwt_secret.clone());
+        self.security.jwt_expiry = file_config.security.jwt_expiry.or(self.security.jwt_expiry);
+        self.security.api_keys = file_config.security.api_keys;
+        self.security.cors_origins = file_config.security.cors_origins;
+        self.security.rate_limit = file_config
+            .security
+            .rate_limit
+            .or(self.security.rate_limit.clone());
 
         Ok(())
     }
@@ -305,7 +356,9 @@ impl AppConfig {
                 }
                 // Enforce minimum length
                 if secret.len() < 32 {
-                    errors.push("JWT secret must be at least 32 characters long for security".to_string());
+                    errors.push(
+                        "JWT secret must be at least 32 characters long for security".to_string(),
+                    );
                 }
             } else {
                 errors.push("JWT secret is required when authentication is enabled".to_string());
@@ -320,7 +373,10 @@ impl AppConfig {
         // Validate TLS configuration if present
         if let Some(ref tls) = self.server.tls {
             if !tls.cert_file.exists() {
-                errors.push(format!("TLS certificate file not found: {:?}", tls.cert_file));
+                errors.push(format!(
+                    "TLS certificate file not found: {:?}",
+                    tls.cert_file
+                ));
             }
             if !tls.key_file.exists() {
                 errors.push(format!("TLS key file not found: {:?}", tls.key_file));
@@ -344,12 +400,13 @@ mod tests {
         let mut config = AppConfig::default();
         assert_eq!(config.server.host, "0.0.0.0");
         assert_eq!(config.server.port, 8080);
-        
+
         // Default config has auth enabled but no JWT secret, which should fail validation
         assert!(config.validate().is_err());
-        
+
         // Adding a valid JWT secret should make it pass
-        config.security.jwt_secret = Some("a-very-long-secure-jwt-secret-that-is-at-least-32-characters".to_string());
+        config.security.jwt_secret =
+            Some("a-very-long-secure-jwt-secret-that-is-at-least-32-characters".to_string());
         assert!(config.validate().is_ok());
     }
 
@@ -357,7 +414,8 @@ mod tests {
     fn test_config_validation() {
         let mut config = AppConfig::default();
         // Add valid JWT secret for auth
-        config.security.jwt_secret = Some("a-very-long-secure-jwt-secret-that-is-at-least-32-characters".to_string());
+        config.security.jwt_secret =
+            Some("a-very-long-secure-jwt-secret-that-is-at-least-32-characters".to_string());
 
         // Test invalid server config
         config.server.host = "".to_string();
@@ -385,19 +443,20 @@ mod tests {
     fn test_jwt_secret_validation() {
         let mut config = AppConfig::default();
         config.security.auth_enabled = true;
-        
+
         // Test with no JWT secret
         config.security.jwt_secret = None;
         assert!(config.validate().is_err());
-        
+
         // Test with weak JWT secret
-        config.security.jwt_secret = Some("your-super-secret-jwt-key-change-this-in-production".to_string());
+        config.security.jwt_secret =
+            Some("your-super-secret-jwt-key-change-this-in-production".to_string());
         let result = config.validate();
         assert!(result.is_err());
         if let Err(errors) = result {
             assert!(errors.iter().any(|e| e.contains("CRITICAL SECURITY ERROR")));
         }
-        
+
         // Test with short JWT secret
         config.security.jwt_secret = Some("short".to_string());
         let result = config.validate();
@@ -405,9 +464,10 @@ mod tests {
         if let Err(errors) = result {
             assert!(errors.iter().any(|e| e.contains("at least 32 characters")));
         }
-        
+
         // Test with valid JWT secret
-        config.security.jwt_secret = Some("a-very-long-and-secure-jwt-secret-key-that-is-definitely-not-weak".to_string());
+        config.security.jwt_secret =
+            Some("a-very-long-and-secure-jwt-secret-key-that-is-definitely-not-weak".to_string());
         assert!(config.validate().is_ok());
     }
 }

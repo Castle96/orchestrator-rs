@@ -38,7 +38,7 @@ impl LxcCommand {
 
     /// List all containers
     pub fn list() -> Result<Vec<String>> {
-        let output = Self::execute(&["list", "-1", "-n"])?;
+        let output = Self::execute(&["ls", "--line"])?;
         Ok(output
             .lines()
             .map(|s| s.trim().to_string())

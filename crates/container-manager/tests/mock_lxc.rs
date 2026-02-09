@@ -1,6 +1,5 @@
 use std::fs::{self, File};
 use std::io::Write;
-use std::path::PathBuf;
 use std::process::Command;
 
 use models::{ContainerConfig, CreateContainerRequest};
@@ -12,7 +11,7 @@ async fn test_mock_container_create_and_list() {
     // Prepare a temporary directory for LXC root
     let base = std::env::temp_dir().join(format!("orchestrator_mock_{}", Uuid::new_v4()));
     let bin = base.join("bin");
-    let _ = fs::create_dir_all(&bin).expect("create bin dir");
+    fs::create_dir_all(&bin).expect("create bin dir");
 
     // Path for the fake container state file
     let state_file = base.join("containers.txt");
@@ -34,9 +33,7 @@ async fn test_mock_container_create_and_list() {
     // lxc-list: print the state file if exists
     write_script(
         "lxc-list",
-        &format!(
-            "#!/bin/sh\nif [ -f \"$LXC_STATE_FILE\" ]; then cat \"$LXC_STATE_FILE\"; fi\n"
-        ),
+        "#!/bin/sh\nif [ -f \"$LXC_STATE_FILE\" ]; then cat \"$LXC_STATE_FILE\"; fi\n",
     );
 
     // lxc-create: append the container name to the state file

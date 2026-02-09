@@ -37,12 +37,14 @@ async fn main() -> std::io::Result<()> {
                 eprintln!("Warning: Failed to load config from {}: {}", config_path, e);
             } else {
                 println!("Loaded configuration from: {}", config_path);
+                println!("Auth enabled from file: {}", app_config.security.auth_enabled);
                 break;
             }
         }
     }
 
     // Validate configuration
+    println!("Before validation - auth_enabled: {}", app_config.security.auth_enabled);
     if let Err(errors) = app_config.validate() {
         eprintln!("Configuration validation failed:");
         for error in errors {

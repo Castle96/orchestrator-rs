@@ -1,0 +1,65 @@
+# Production Configuration for ARM Hypervisor
+# Replace with your actual values before deployment
+
+[server]
+host = "0.0.0.0"
+port = 8443
+workers = 4
+max_connections = 1000
+keepalive = 30
+client_timeout = 60
+
+# TLS Configuration - Generate certificates before enabling
+[server.tls]
+cert_file = "/etc/arm-hypervisor/ssl/server.crt"
+key_file = "/etc/arm-hypervisor/ssl/server.key"
+
+[database]
+url = "sqlite:///var/lib/arm-hypervisor/hypervisor.db"
+max_connections = 10
+min_connections = 1
+acquire_timeout = 30
+idle_timeout = 600
+
+[cluster]
+node_name = "arm-node-1"
+bind_address = "0.0.0.0"
+bind_port = 7946
+# Add other node addresses here for clustering
+join_addresses = []
+election_timeout = 5000
+heartbeat_interval = 1000
+
+[storage]
+base_path = "/var/lib/arm-hypervisor/storage"
+default_pool = "default"
+pool_configs = [
+    { name = "default", storage_type = "local", path = "/var/lib/arm-hypervisor/storage/default", options = {} },
+    { name = "ssd-storage", storage_type = "local", path = "/var/lib/arm-hypervisor/storage/ssd", options = {} }
+]
+
+[network]
+default_bridge = "lxcbr0"
+bridge_prefix = "hvbr"
+ip_range = "192.168.100.0/24"
+dns_servers = ["8.8.8.8", "8.8.4.4", "1.1.1.1"]
+firewall_enabled = true
+
+[logging]
+level = "info"
+# file = "/var/log/arm-hypervisor/hypervisor.log"
+rotate = true
+max_files = 10
+max_size = "100MB"
+
+[security]
+auth_enabled = true
+# IMPORTANT: Replace this with a secure randomly generated secret
+jwt_secret = "REPLACE_WITH_SECURE_RANDOM_32_CHAR_SECRET_MINIMUM"
+jwt_expiry = 86400
+api_keys = []
+cors_origins = ["https://yourdomain.com"]
+
+[security.rate_limit]
+requests_per_minute = 60
+burst_size = 10
