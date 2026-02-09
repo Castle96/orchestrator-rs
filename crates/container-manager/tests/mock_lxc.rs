@@ -2,9 +2,9 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::process::Command;
 
+use container_manager::ContainerManager;
 use models::{ContainerConfig, CreateContainerRequest};
 use uuid::Uuid;
-use container_manager::ContainerManager;
 
 #[tokio::test]
 async fn test_mock_container_create_and_list() {
@@ -57,7 +57,10 @@ async fn test_mock_container_create_and_list() {
 
     // Debug prints to help diagnose permission issues in CI/local
     println!("LXC_ROOT={}", std::env::var("LXC_ROOT").unwrap());
-    println!("LXC_STATE_FILE={}", std::env::var("LXC_STATE_FILE").unwrap());
+    println!(
+        "LXC_STATE_FILE={}",
+        std::env::var("LXC_STATE_FILE").unwrap()
+    );
 
     // Verify we can write to base
     let test_dir = base.join("probe_dir");

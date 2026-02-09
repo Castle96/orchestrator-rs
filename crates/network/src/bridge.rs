@@ -1,8 +1,8 @@
-use std::process::Command;
-use anyhow::{Context, Result};
-use tracing::{info, error};
-use models::{Bridge, CreateBridgeRequest};
 use crate::error::NetworkError;
+use anyhow::{Context, Result};
+use models::{Bridge, CreateBridgeRequest};
+use std::process::Command;
+use tracing::{error, info};
 
 pub struct BridgeManager;
 
@@ -101,7 +101,7 @@ impl BridgeManager {
 
         if !output.status.success() {
             return Err(NetworkError::CommandFailed(
-                String::from_utf8_lossy(&output.stderr).to_string()
+                String::from_utf8_lossy(&output.stderr).to_string(),
             ));
         }
 

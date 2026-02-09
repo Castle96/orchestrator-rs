@@ -16,32 +16,32 @@ pub enum AuditAction {
     ContainerSnapshotRestored,
     ContainerSnapshotDeleted,
     ContainerCloned,
-    
+
     // User actions
     UserCreated,
     UserUpdated,
     UserDeleted,
     UserLogin,
     UserLogout,
-    
+
     // Cluster actions
     ClusterJoined,
     ClusterLeft,
     ClusterNodeAdded,
     ClusterNodeRemoved,
-    
+
     // Storage actions
     StoragePoolCreated,
     StoragePoolDeleted,
     VolumeCreated,
     VolumeDeleted,
-    
+
     // Network actions
     BridgeCreated,
     BridgeDeleted,
     NetworkInterfaceCreated,
     NetworkInterfaceDeleted,
-    
+
     // System actions
     ConfigurationChanged,
     SystemStarted,

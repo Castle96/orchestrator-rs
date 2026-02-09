@@ -95,7 +95,7 @@ where
             match &res {
                 Ok(response) => {
                     let status = response.status();
-                    
+
                     if status.is_client_error() || status.is_server_error() {
                         metrics.record_error();
                         warn!(

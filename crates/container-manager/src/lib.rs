@@ -10,7 +10,7 @@ pub use snapshot::*;
 
 #[cfg(test)]
 mod tests {
-    
+
     use models::{ContainerConfig, ContainerNetworkInterface, CreateContainerRequest};
 
     #[tokio::test]

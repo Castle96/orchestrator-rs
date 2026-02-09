@@ -63,5 +63,3 @@ cors_origins = ["https://yourdomain.com"]
 [security.rate_limit]
 requests_per_minute = 60
 burst_size = 10
-
-/8PlxiWD46Z2vnx5EuOCu9beFkzEcmpyzKgU4Etm/Rk

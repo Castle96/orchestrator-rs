@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-use uuid::Uuid;
 use serde::{Deserialize, Serialize};
-use tracing::{info, debug};
+use std::collections::HashMap;
+use tracing::{debug, info};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClusterState {

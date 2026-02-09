@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use uuid::Uuid;
 use chrono::Utc;
+use models::{Node, NodeResources, NodeStatus};
+use std::collections::HashMap;
 use tracing::info;
-use models::{Node, NodeStatus, NodeResources};
+use uuid::Uuid;
 
 pub struct MembershipManager {
     nodes: HashMap<Uuid, Node>,

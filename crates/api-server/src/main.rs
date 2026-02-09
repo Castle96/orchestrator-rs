@@ -11,11 +11,11 @@ mod rbac;
 mod request_tracing;
 mod routes;
 
+use audit::AuditLogger;
 use config::AppConfig;
 use middleware::{RequestLogging, SecurityHeaders, SimpleCors};
 use observability::MetricsCollector;
 use rbac::UserStore;
-use audit::AuditLogger;
 use routes::configure_routes;
 
 #[actix_web::main]
@@ -37,14 +37,20 @@ async fn main() -> std::io::Result<()> {
                 eprintln!("Warning: Failed to load config from {}: {}", config_path, e);
             } else {
                 println!("Loaded configuration from: {}", config_path);
-                println!("Auth enabled from file: {}", app_config.security.auth_enabled);
+                println!(
+                    "Auth enabled from file: {}",
+                    app_config.security.auth_enabled
+                );
                 break;
             }
         }
     }
 
     // Validate configuration
-    println!("Before validation - auth_enabled: {}", app_config.security.auth_enabled);
+    println!(
+        "Before validation - auth_enabled: {}",
+        app_config.security.auth_enabled
+    );
     if let Err(errors) = app_config.validate() {
         eprintln!("Configuration validation failed:");
         for error in errors {
@@ -69,19 +75,19 @@ async fn main() -> std::io::Result<()> {
         "Authentication enabled: {}",
         app_config.security.auth_enabled
     );
-    
+
     // Override JWT secret from environment if provided
     if let Ok(jwt_secret) = std::env::var("JWT_SECRET") {
         tracing::info!("JWT secret loaded from environment variable");
         app_config.security.jwt_secret = Some(jwt_secret);
     }
-    
+
     if app_config.security.auth_enabled && app_config.security.jwt_secret.is_none() {
         eprintln!("CRITICAL ERROR: Authentication is enabled but no JWT secret is configured!");
         eprintln!("Set JWT_SECRET environment variable or configure it in config file.");
         std::process::exit(1);
     }
-    
+
     if app_config.server.tls.is_some() {
         tracing::info!("TLS is enabled");
     } else {
@@ -91,10 +97,10 @@ async fn main() -> std::io::Result<()> {
     // Create shared app data
     let server_config = app_config.server.clone();
     let _security_config = app_config.security.clone();
-    
+
     // Create metrics collector
     let metrics_collector = Arc::new(MetricsCollector::new());
-    
+
     // Create user store and audit logger
     let user_store = Arc::new(std::sync::Mutex::new(UserStore::new()));
     let audit_logger = Arc::new(AuditLogger::new(10000));
@@ -107,7 +113,9 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(audit_logger.clone()))
             .wrap(Logger::default())
             .wrap(SecurityHeaders)
-            .wrap(request_tracing::RequestTracing::new(metrics_collector.clone()))
+            .wrap(request_tracing::RequestTracing::new(
+                metrics_collector.clone(),
+            ))
             .wrap(RequestLogging)
             .wrap(SimpleCors)
             .configure(configure_routes)
@@ -115,38 +123,42 @@ async fn main() -> std::io::Result<()> {
 
     // Configure server based on config
     let bind_address = (server_config.host.as_str(), server_config.port);
-    
+
     let mut server = if let Some(ref tls_config) = server_config.tls {
         // TLS is configured - bind with TLS
         tracing::info!("Binding with TLS using cert: {:?}", tls_config.cert_file);
-        
+
         use rustls::ServerConfig;
         use rustls_pemfile::{certs, pkcs8_private_keys};
         use std::fs::File;
         use std::io::BufReader;
-        
+
         // Load TLS certificate and key
-        let cert_file = &mut BufReader::new(File::open(&tls_config.cert_file)
-            .map_err(|e| std::io::Error::other(format!("Failed to open cert file: {}", e)))?);
-        let key_file = &mut BufReader::new(File::open(&tls_config.key_file)
-            .map_err(|e| std::io::Error::other(format!("Failed to open key file: {}", e)))?);
-        
+        let cert_file = &mut BufReader::new(
+            File::open(&tls_config.cert_file)
+                .map_err(|e| std::io::Error::other(format!("Failed to open cert file: {}", e)))?,
+        );
+        let key_file = &mut BufReader::new(
+            File::open(&tls_config.key_file)
+                .map_err(|e| std::io::Error::other(format!("Failed to open key file: {}", e)))?,
+        );
+
         let cert_chain = certs(cert_file)
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| std::io::Error::other(format!("Failed to parse cert: {}", e)))?;
         let mut keys = pkcs8_private_keys(key_file)
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| std::io::Error::other(format!("Failed to parse key: {}", e)))?;
-        
+
         if keys.is_empty() {
             return Err(std::io::Error::other("No private key found in key file"));
         }
-        
+
         let tls_config = ServerConfig::builder()
             .with_no_client_auth()
             .with_single_cert(cert_chain, keys.remove(0).into())
             .map_err(|e| std::io::Error::other(format!("Failed to build TLS config: {}", e)))?;
-        
+
         server.bind_rustls_0_23(bind_address, tls_config)?
     } else {
         // No TLS - plain HTTP

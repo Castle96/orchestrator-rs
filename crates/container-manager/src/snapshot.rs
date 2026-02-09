@@ -33,9 +33,8 @@ impl SnapshotManager {
         }
 
         // Generate snapshot name if not provided
-        let snap_name = snapshot_name.unwrap_or_else(|| {
-            format!("snap_{}", chrono::Utc::now().format("%Y%m%d_%H%M%S"))
-        });
+        let snap_name = snapshot_name
+            .unwrap_or_else(|| format!("snap_{}", chrono::Utc::now().format("%Y%m%d_%H%M%S")));
 
         info!(
             "Creating snapshot '{}' for container '{}'",
@@ -49,8 +48,7 @@ impl SnapshotManager {
             vec!["snapshot", "-n", &snap_name, container_name]
         };
 
-        LxcCommand::execute(&args)
-            .map_err(|e| ContainerError::LxcCommandFailed(e.to_string()))?;
+        LxcCommand::execute(&args).map_err(|e| ContainerError::LxcCommandFailed(e.to_string()))?;
 
         // Get snapshot size
         let snapshot_path = Self::get_snapshot_path(container_name, &snap_name);
@@ -108,10 +106,7 @@ impl SnapshotManager {
     }
 
     /// Restore a container from a snapshot
-    pub async fn restore(
-        container_name: &str,
-        snapshot_name: &str,
-    ) -> Result<(), ContainerError> {
+    pub async fn restore(container_name: &str, snapshot_name: &str) -> Result<(), ContainerError> {
         if !LxcCommand::exists(container_name) {
             return Err(ContainerError::NotFound(container_name.to_string()));
         }
@@ -129,10 +124,7 @@ impl SnapshotManager {
     }
 
     /// Delete a snapshot
-    pub async fn delete(
-        container_name: &str,
-        snapshot_name: &str,
-    ) -> Result<(), ContainerError> {
+    pub async fn delete(container_name: &str, snapshot_name: &str) -> Result<(), ContainerError> {
         if !LxcCommand::exists(container_name) {
             return Err(ContainerError::NotFound(container_name.to_string()));
         }
@@ -160,7 +152,9 @@ impl SnapshotManager {
         }
 
         if LxcCommand::exists(new_container_name) {
-            return Err(ContainerError::AlreadyExists(new_container_name.to_string()));
+            return Err(ContainerError::AlreadyExists(
+                new_container_name.to_string(),
+            ));
         }
 
         info!(
@@ -186,7 +180,8 @@ impl SnapshotManager {
 
     /// Get the path to a snapshot directory
     fn get_snapshot_path(container_name: &str, snapshot_name: &str) -> PathBuf {
-        crate::config::LxcConfig::lxc_root().as_path()
+        crate::config::LxcConfig::lxc_root()
+            .as_path()
             .join(container_name)
             .join("snaps")
             .join(snapshot_name)
@@ -228,7 +223,10 @@ mod tests {
         let path = SnapshotManager::get_snapshot_path("test-container", "snap1");
         assert_eq!(
             path,
-            crate::config::LxcConfig::lxc_root().join("test-container").join("snaps").join("snap1")
+            crate::config::LxcConfig::lxc_root()
+                .join("test-container")
+                .join("snaps")
+                .join("snap1")
         );
     }
 

@@ -10,7 +10,7 @@ pub use volumes::*;
 
 #[cfg(test)]
 mod tests {
-    
+
     use models::{CreateStoragePoolRequest, StorageType};
 
     #[tokio::test]

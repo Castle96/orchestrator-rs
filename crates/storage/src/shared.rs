@@ -1,8 +1,8 @@
-use models::{StoragePool, StorageType};
-use uuid::Uuid;
-use chrono::Utc;
-use tracing::info;
 use crate::error::StorageError;
+use chrono::Utc;
+use models::{StoragePool, StorageType};
+use tracing::info;
+use uuid::Uuid;
 
 pub struct SharedStorageManager;
 
@@ -17,7 +17,7 @@ impl SharedStorageManager {
 
         // In production, this would mount the NFS share and verify it
         // For now, we'll create a placeholder pool
-        
+
         Ok(StoragePool {
             id: Uuid::new_v4(),
             name: name.to_string(),
@@ -37,7 +37,10 @@ impl SharedStorageManager {
         share: &str,
         _username: Option<&str>,
     ) -> Result<StoragePool, StorageError> {
-        info!("Creating CIFS storage pool: {} at {}:{}", name, server, share);
+        info!(
+            "Creating CIFS storage pool: {} at {}:{}",
+            name, server, share
+        );
 
         // In production, this would mount the CIFS share
         Ok(StoragePool {

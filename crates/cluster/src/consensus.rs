@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-use uuid::Uuid;
-use tracing::info;
 use crate::error::ClusterError;
+use std::collections::HashMap;
+use tracing::info;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RaftState {
@@ -45,7 +45,11 @@ impl RaftNode {
     }
 
     pub fn become_candidate(&mut self) -> Result<(), ClusterError> {
-        info!("Node {} becoming candidate for term {}", self.node_id, self.current_term + 1);
+        info!(
+            "Node {} becoming candidate for term {}",
+            self.node_id,
+            self.current_term + 1
+        );
         self.current_term += 1;
         self.state = RaftState::Candidate;
         self.voted_for = Some(self.node_id);
@@ -53,7 +57,10 @@ impl RaftNode {
     }
 
     pub fn become_leader(&mut self) -> Result<(), ClusterError> {
-        info!("Node {} becoming leader for term {}", self.node_id, self.current_term);
+        info!(
+            "Node {} becoming leader for term {}",
+            self.node_id, self.current_term
+        );
         self.state = RaftState::Leader;
         Ok(())
     }

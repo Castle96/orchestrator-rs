@@ -26,9 +26,7 @@ fn create_test_app() -> App<
 
 // Helper to check if LXC is available in environment
 fn lxc_available() -> bool {
-    std::process::Command::new("lxc-ls")
-        .output()
-        .is_ok()
+    std::process::Command::new("lxc-ls").output().is_ok()
 }
 
 #[actix_web::test]
@@ -41,14 +39,22 @@ async fn test_list_containers() {
 
     let resp = test::call_service(&app, req).await;
     let status = resp.status();
-    
+
     // In test environment without LXC, we expect 500 or 503
     // In production with LXC, we expect 200
     if !lxc_available() {
         println!("LXC not available - testing API structure only");
-        assert!(status.as_u16() >= 500, "Expected error status in test env without LXC, got {}", status);
+        assert!(
+            status.as_u16() >= 500,
+            "Expected error status in test env without LXC, got {}",
+            status
+        );
     } else {
-        assert!(status.is_success(), "Expected success with LXC installed, got {}", status);
+        assert!(
+            status.is_success(),
+            "Expected success with LXC installed, got {}",
+            status
+        );
     }
 }
 
@@ -76,13 +82,21 @@ async fn test_create_container() {
 
     let resp = test::call_service(&app, req).await;
     let status = resp.status();
-    
+
     // In test environment: expect 500 (LXC not available)
     // In production: expect 201 (created) or 4xx (validation error)
     if !lxc_available() {
-        assert!(status.as_u16() >= 500, "Expected error in test env, got {}", status);
+        assert!(
+            status.as_u16() >= 500,
+            "Expected error in test env, got {}",
+            status
+        );
     } else {
-        assert!(status.is_client_error() || status.is_success(), "Expected 2xx/4xx with LXC, got {}", status);
+        assert!(
+            status.is_client_error() || status.is_success(),
+            "Expected 2xx/4xx with LXC, got {}",
+            status
+        );
     }
 }
 
@@ -137,7 +151,7 @@ async fn test_list_bridges() {
 
     let resp = test::call_service(&app, req).await;
     let status = resp.status();
-    
+
     // Network operations require privileges
     // Accept any response - we're testing API structure
     println!("list_bridges status: {}", status);
@@ -161,7 +175,7 @@ async fn test_create_bridge() {
 
     let resp = test::call_service(&app, req).await;
     let status = resp.status();
-    
+
     // Creating bridges requires root - accept any response in tests
     println!("create_bridge status: {}", status);
     assert!(status.as_u16() >= 200, "Got invalid status: {}", status);
@@ -191,12 +205,15 @@ async fn test_invalid_container_name() {
 
     let resp = test::call_service(&app, req).await;
     let status = resp.status();
-    
+
     // Should return 4xx (client error) for invalid name
     // But may return 500 if LXC check fails first
     println!("invalid_container_name status: {}", status);
-    assert!(status.is_client_error() || status.as_u16() == 500, 
-            "Expected 4xx or 500, got {}", status);
+    assert!(
+        status.is_client_error() || status.as_u16() == 500,
+        "Expected 4xx or 500, got {}",
+        status
+    );
 }
 
 #[actix_web::test]
@@ -240,7 +257,7 @@ async fn test_health_endpoint() {
     // Should not return 404 (endpoint exists) or 500 (unless dependencies fail)
     assert!(
         status.is_success() || status.as_u16() == 503,
-        "Health endpoint should return 2xx or 503, got: {}", 
+        "Health endpoint should return 2xx or 503, got: {}",
         status
     );
 }
@@ -307,9 +324,7 @@ async fn test_list_snapshots() {
 #[actix_web::test]
 async fn test_list_users() {
     let app = test::init_service(create_test_app()).await;
-    let req = test::TestRequest::get()
-        .uri("/api/v1/users")
-        .to_request();
+    let req = test::TestRequest::get().uri("/api/v1/users").to_request();
     let resp = test::call_service(&app, req).await;
     let status = resp.status();
     // With proper dependencies, user list should return 200

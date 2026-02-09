@@ -39,10 +39,7 @@ impl MetricsCollector {
     }
 
     pub fn get_uptime_seconds(&self) -> u64 {
-        self.start_time
-            .elapsed()
-            .unwrap_or_default()
-            .as_secs()
+        self.start_time.elapsed().unwrap_or_default().as_secs()
     }
 }
 
@@ -64,7 +61,10 @@ pub async fn health_check() -> impl Responder {
 
     // Check container manager health
     if skip_system_checks {
-        status.insert("container_manager", json!({"status": "healthy", "note": "skipped system checks in dev mode"}));
+        status.insert(
+            "container_manager",
+            json!({"status": "healthy", "note": "skipped system checks in dev mode"}),
+        );
     } else {
         match ContainerManager::list().await {
             Ok(_) => {
@@ -85,7 +85,10 @@ pub async fn health_check() -> impl Responder {
 
     // Check network manager health
     if skip_system_checks {
-        status.insert("network_manager", json!({"status": "healthy", "note": "skipped system checks in dev mode"}));
+        status.insert(
+            "network_manager",
+            json!({"status": "healthy", "note": "skipped system checks in dev mode"}),
+        );
     } else {
         match BridgeManager::list().await {
             Ok(_) => {
@@ -128,8 +131,16 @@ pub async fn readiness_check() -> impl Responder {
         .unwrap_or(false);
 
     // Check if critical services are operational
-    let container_ready = if skip_system_checks { true } else { ContainerManager::list().await.is_ok() };
-    let network_ready = if skip_system_checks { true } else { BridgeManager::list().await.is_ok() };
+    let container_ready = if skip_system_checks {
+        true
+    } else {
+        ContainerManager::list().await.is_ok()
+    };
+    let network_ready = if skip_system_checks {
+        true
+    } else {
+        BridgeManager::list().await.is_ok()
+    };
 
     if container_ready && network_ready {
         HttpResponse::Ok().json(json!({
@@ -157,13 +168,18 @@ pub async fn metrics_json(
     // Application metrics
     metrics.insert(
         "http_requests_total",
-        json!(metrics_collector.http_requests_total.load(Ordering::Relaxed)),
+        json!(metrics_collector
+            .http_requests_total
+            .load(Ordering::Relaxed)),
     );
     metrics.insert(
         "http_errors_total",
         json!(metrics_collector.http_errors_total.load(Ordering::Relaxed)),
     );
-    metrics.insert("uptime_seconds", json!(metrics_collector.get_uptime_seconds()));
+    metrics.insert(
+        "uptime_seconds",
+        json!(metrics_collector.get_uptime_seconds()),
+    );
 
     // System metrics
     if let Ok(load_avg) = sys_info::loadavg() {
@@ -258,11 +274,12 @@ pub async fn metrics_prometheus(
     let mut output = String::new();
 
     // Helper to add a metric
-    let add_metric = |output: &mut String, name: &str, help: &str, metric_type: &str, value: String| {
-        output.push_str(&format!("# HELP {} {}\n", name, help));
-        output.push_str(&format!("# TYPE {} {}\n", name, metric_type));
-        output.push_str(&format!("{} {}\n", name, value));
-    };
+    let add_metric =
+        |output: &mut String, name: &str, help: &str, metric_type: &str, value: String| {
+            output.push_str(&format!("# HELP {} {}\n", name, help));
+            output.push_str(&format!("# TYPE {} {}\n", name, metric_type));
+            output.push_str(&format!("{} {}\n", name, value));
+        };
 
     // Application metrics
     add_metric(

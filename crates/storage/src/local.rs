@@ -1,10 +1,10 @@
-use std::path::Path;
-use std::fs;
-use uuid::Uuid;
-use chrono::Utc;
 use anyhow::Result;
-use tracing::info;
+use chrono::Utc;
 use models::{StoragePool, StorageType};
+use std::fs;
+use std::path::Path;
+use tracing::info;
+use uuid::Uuid;
 
 use crate::error::StorageError;
 
@@ -12,17 +12,13 @@ pub struct LocalStorageManager;
 
 impl LocalStorageManager {
     /// Create a new local storage pool
-    pub async fn create_pool(
-        name: &str,
-        path: &str,
-    ) -> Result<StoragePool, StorageError> {
+    pub async fn create_pool(name: &str, path: &str) -> Result<StoragePool, StorageError> {
         info!("Creating local storage pool: {} at {}", name, path);
 
         let pool_path = Path::new(path);
-        
+
         // Create directory if it doesn't exist
-        fs::create_dir_all(pool_path)
-            .map_err(StorageError::Io)?;
+        fs::create_dir_all(pool_path).map_err(StorageError::Io)?;
 
         // Get filesystem statistics
         let (total_size, used_size) = Self::get_filesystem_stats(pool_path)?;
@@ -44,8 +40,7 @@ impl LocalStorageManager {
     fn get_filesystem_stats(path: &Path) -> Result<(u64, u64), StorageError> {
         // This is a simplified version - in production, use statvfs or similar
         // For now, we'll use a basic approach
-        let _metadata = fs::metadata(path)
-            .map_err(StorageError::Io)?;
+        let _metadata = fs::metadata(path).map_err(StorageError::Io)?;
 
         // Note: This doesn't give actual filesystem stats, but it's a placeholder
         // In production, you'd use libc::statvfs or similar
@@ -58,27 +53,22 @@ impl LocalStorageManager {
     /// Calculate directory size recursively
     fn calculate_directory_size(path: &Path) -> Result<u64, StorageError> {
         let mut total = 0u64;
-        
+
         if path.is_dir() {
-            let entries = fs::read_dir(path)
-                .map_err(StorageError::Io)?;
-            
+            let entries = fs::read_dir(path).map_err(StorageError::Io)?;
+
             for entry in entries {
                 let entry = entry.map_err(StorageError::Io)?;
                 let path = entry.path();
-                
+
                 if path.is_dir() {
                     total += Self::calculate_directory_size(&path)?;
                 } else {
-                    total += entry.metadata()
-                        .map_err(StorageError::Io)?
-                        .len();
+                    total += entry.metadata().map_err(StorageError::Io)?.len();
                 }
             }
         } else {
-            total = fs::metadata(path)
-                .map_err(StorageError::Io)?
-                .len();
+            total = fs::metadata(path).map_err(StorageError::Io)?.len();
         }
 
         Ok(total)
@@ -87,13 +77,12 @@ impl LocalStorageManager {
     /// Delete a storage pool
     pub async fn delete_pool(path: &str) -> Result<(), StorageError> {
         info!("Deleting storage pool at: {}", path);
-        
+
         if !Path::new(path).exists() {
             return Err(StorageError::PoolNotFound(path.to_string()));
         }
 
-        fs::remove_dir_all(path)
-            .map_err(StorageError::Io)?;
+        fs::remove_dir_all(path).map_err(StorageError::Io)?;
 
         Ok(())
     }

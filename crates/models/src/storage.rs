@@ -1,6 +1,6 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoragePool {
@@ -8,8 +8,8 @@ pub struct StoragePool {
     pub name: String,
     pub storage_type: StorageType,
     pub path: String,
-    pub total_size: u64, // in bytes
-    pub used_size: u64, // in bytes
+    pub total_size: u64,     // in bytes
+    pub used_size: u64,      // in bytes
     pub available_size: u64, // in bytes
     pub created_at: DateTime<Utc>,
 }

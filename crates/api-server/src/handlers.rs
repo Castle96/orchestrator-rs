@@ -300,11 +300,9 @@ pub async fn list_snapshots(path: web::Path<String>) -> impl Responder {
             "container": container_name,
             "snapshots": snapshots
         })),
-        Err(ContainerError::NotFound(name)) => {
-            HttpResponse::NotFound().json(serde_json::json!({
-                "error": format!("Container not found: {}", name)
-            }))
-        }
+        Err(ContainerError::NotFound(name)) => HttpResponse::NotFound().json(serde_json::json!({
+            "error": format!("Container not found: {}", name)
+        })),
         Err(e) => {
             error!("Failed to list snapshots: {}", e);
             HttpResponse::InternalServerError().json(serde_json::json!({
@@ -327,11 +325,9 @@ pub async fn create_snapshot(
             "message": "Snapshot created successfully",
             "snapshot": snapshot
         })),
-        Err(ContainerError::NotFound(name)) => {
-            HttpResponse::NotFound().json(serde_json::json!({
-                "error": format!("Container not found: {}", name)
-            }))
-        }
+        Err(ContainerError::NotFound(name)) => HttpResponse::NotFound().json(serde_json::json!({
+            "error": format!("Container not found: {}", name)
+        })),
         Err(e) => {
             error!("Failed to create snapshot: {}", e);
             HttpResponse::InternalServerError().json(serde_json::json!({
@@ -359,11 +355,9 @@ pub async fn restore_snapshot(
                 container_name, req.snapshot_name
             )
         })),
-        Err(ContainerError::NotFound(name)) => {
-            HttpResponse::NotFound().json(serde_json::json!({
-                "error": format!("Container not found: {}", name)
-            }))
-        }
+        Err(ContainerError::NotFound(name)) => HttpResponse::NotFound().json(serde_json::json!({
+            "error": format!("Container not found: {}", name)
+        })),
         Err(e) => {
             error!("Failed to restore snapshot: {}", e);
             HttpResponse::InternalServerError().json(serde_json::json!({
@@ -385,11 +379,9 @@ pub async fn delete_snapshot(path: web::Path<(String, String)>) -> impl Responde
         Ok(_) => HttpResponse::Ok().json(serde_json::json!({
             "message": format!("Snapshot '{}' deleted", snapshot_name)
         })),
-        Err(ContainerError::NotFound(name)) => {
-            HttpResponse::NotFound().json(serde_json::json!({
-                "error": format!("Container not found: {}", name)
-            }))
-        }
+        Err(ContainerError::NotFound(name)) => HttpResponse::NotFound().json(serde_json::json!({
+            "error": format!("Container not found: {}", name)
+        })),
         Err(e) => {
             error!("Failed to delete snapshot: {}", e);
             HttpResponse::InternalServerError().json(serde_json::json!({
@@ -410,8 +402,7 @@ pub async fn clone_from_snapshot(
         container_name, req.snapshot_name, req.new_container_name
     );
 
-    match SnapshotManager::clone(&container_name, &req.snapshot_name, &req.new_container_name)
-        .await
+    match SnapshotManager::clone(&container_name, &req.snapshot_name, &req.new_container_name).await
     {
         Ok(_) => HttpResponse::Created().json(serde_json::json!({
             "message": format!(
@@ -419,11 +410,9 @@ pub async fn clone_from_snapshot(
                 container_name, req.snapshot_name, req.new_container_name
             )
         })),
-        Err(ContainerError::NotFound(name)) => {
-            HttpResponse::NotFound().json(serde_json::json!({
-                "error": format!("Container not found: {}", name)
-            }))
-        }
+        Err(ContainerError::NotFound(name)) => HttpResponse::NotFound().json(serde_json::json!({
+            "error": format!("Container not found: {}", name)
+        })),
         Err(ContainerError::AlreadyExists(name)) => {
             HttpResponse::Conflict().json(serde_json::json!({
                 "error": format!("Container already exists: {}", name)

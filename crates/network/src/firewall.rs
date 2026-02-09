@@ -1,16 +1,13 @@
-use std::process::Command;
-use anyhow::Context;
-use tracing::{info, warn};
 use crate::error::NetworkError;
+use anyhow::Context;
+use std::process::Command;
+use tracing::{info, warn};
 
 pub struct FirewallManager;
 
 impl FirewallManager {
     /// Add an iptables rule
-    pub async fn add_rule(
-        chain: &str,
-        rule: &[&str],
-    ) -> Result<(), NetworkError> {
+    pub async fn add_rule(chain: &str, rule: &[&str]) -> Result<(), NetworkError> {
         info!("Adding iptables rule to chain {}: {:?}", chain, rule);
 
         let mut args = vec!["-A", chain];
@@ -31,10 +28,7 @@ impl FirewallManager {
     }
 
     /// Delete an iptables rule
-    pub async fn delete_rule(
-        chain: &str,
-        rule: &[&str],
-    ) -> Result<(), NetworkError> {
+    pub async fn delete_rule(chain: &str, rule: &[&str]) -> Result<(), NetworkError> {
         info!("Deleting iptables rule from chain {}: {:?}", chain, rule);
 
         let mut args = vec!["-D", chain];

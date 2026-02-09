@@ -1,12 +1,12 @@
 use anyhow::Result;
-use uuid::Uuid;
 use chrono::Utc;
-use tracing::{info, error};
+use tracing::{error, info};
+use uuid::Uuid;
 
-use crate::lxc::LxcCommand;
 use crate::config::LxcConfig;
 use crate::error::ContainerError;
-use models::{Container, ContainerStatus, ContainerConfig, CreateContainerRequest};
+use crate::lxc::LxcCommand;
+use models::{Container, ContainerConfig, ContainerStatus, CreateContainerRequest};
 
 pub struct ContainerManager;
 
@@ -25,8 +25,7 @@ impl ContainerManager {
 
         // Create container directory structure
         let container_dir = crate::config::LxcConfig::lxc_root().join(name);
-        std::fs::create_dir_all(container_dir.join("rootfs"))
-            .map_err(ContainerError::Io)?;
+        std::fs::create_dir_all(container_dir.join("rootfs")).map_err(ContainerError::Io)?;
 
         // Write LXC configuration
         LxcConfig::write(name, &request.config)
@@ -36,12 +35,7 @@ impl ContainerManager {
         // Note: This is a simplified version - in production, you'd need to handle templates
         // For now, we'll create a basic container structure
         // The actual lxc-create command format may vary by LXC version
-        let create_result = LxcCommand::execute(&[
-            "create",
-            name,
-            "-t",
-            &request.template,
-        ]);
+        let create_result = LxcCommand::execute(&["create", name, "-t", &request.template]);
 
         match create_result {
             Ok(_) => {
@@ -67,7 +61,7 @@ impl ContainerManager {
     /// Start a container
     pub async fn start(name: &str) -> Result<(), ContainerError> {
         info!("Starting container: {}", name);
-        
+
         if !LxcCommand::exists(name) {
             return Err(ContainerError::NotFound(name.to_string()));
         }
@@ -81,7 +75,7 @@ impl ContainerManager {
     /// Stop a container
     pub async fn stop(name: &str) -> Result<(), ContainerError> {
         info!("Stopping container: {}", name);
-        
+
         if !LxcCommand::exists(name) {
             return Err(ContainerError::NotFound(name.to_string()));
         }
@@ -95,7 +89,7 @@ impl ContainerManager {
     /// Delete a container
     pub async fn delete(name: &str) -> Result<(), ContainerError> {
         info!("Deleting container: {}", name);
-        
+
         if !LxcCommand::exists(name) {
             return Err(ContainerError::NotFound(name.to_string()));
         }
@@ -115,8 +109,8 @@ impl ContainerManager {
             return Err(ContainerError::NotFound(name.to_string()));
         }
 
-        let state = LxcCommand::state(name)
-            .map_err(|e| ContainerError::LxcCommandFailed(e.to_string()))?;
+        let state =
+            LxcCommand::state(name).map_err(|e| ContainerError::LxcCommandFailed(e.to_string()))?;
 
         let status = match state.as_str() {
             "running" => ContainerStatus::Running,
@@ -132,8 +126,7 @@ impl ContainerManager {
 
     /// List all containers
     pub async fn list() -> Result<Vec<String>, ContainerError> {
-        LxcCommand::list()
-            .map_err(|e| ContainerError::LxcCommandFailed(e.to_string()))
+        LxcCommand::list().map_err(|e| ContainerError::LxcCommandFailed(e.to_string()))
     }
 
     /// Get container information
@@ -143,8 +136,8 @@ impl ContainerManager {
         }
 
         let status = Self::status(name).await?;
-        let _config_str = LxcConfig::read(name)
-            .map_err(|e| ContainerError::InvalidConfig(e.to_string()))?;
+        let _config_str =
+            LxcConfig::read(name).map_err(|e| ContainerError::InvalidConfig(e.to_string()))?;
 
         // Parse config to get ContainerConfig
         // This is simplified - in production, you'd properly parse the LXC config
@@ -153,7 +146,10 @@ impl ContainerManager {
             memory_limit: None,
             disk_limit: None,
             network_interfaces: vec![],
-            rootfs_path: format!("{}/rootfs", crate::config::LxcConfig::lxc_root().join(name).display()),
+            rootfs_path: format!(
+                "{}/rootfs",
+                crate::config::LxcConfig::lxc_root().join(name).display()
+            ),
             environment: vec![],
         };
 

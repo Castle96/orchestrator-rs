@@ -10,7 +10,7 @@ pub use vlan::*;
 
 #[cfg(test)]
 mod tests {
-    
+
     use models::CreateBridgeRequest;
 
     #[tokio::test]

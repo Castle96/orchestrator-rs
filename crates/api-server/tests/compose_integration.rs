@@ -9,7 +9,8 @@ async fn compose_dev_smoke_tests() -> Result<()> {
     // This test is intentionally opt-in. Set RUN_COMPOSE_TESTS=1 to allow the test
     // to bring up the docker-compose dev stack. Otherwise the test will attempt to
     // hit localhost:8080 which must already be running (e.g. developer started it).
-    let run_compose = env::var("RUN_COMPOSE_TESTS").unwrap_or_default() == "1" || env::var("CI").is_ok();
+    let run_compose =
+        env::var("RUN_COMPOSE_TESTS").unwrap_or_default() == "1" || env::var("CI").is_ok();
 
     let repo_root = env::var("ORCHESTRATOR_RS_ROOT").unwrap_or_else(|_| {
         // default to project root relative to crate (two levels up)
@@ -27,7 +28,16 @@ async fn compose_dev_smoke_tests() -> Result<()> {
     if run_compose {
         // Bring up the dev compose stack using the repo compose files.
         let status = Command::new("docker")
-            .args(["compose", "-f", "docker-compose.yml", "-f", "docker-compose.dev.yml", "up", "--build", "-d"])
+            .args([
+                "compose",
+                "-f",
+                "docker-compose.yml",
+                "-f",
+                "docker-compose.dev.yml",
+                "up",
+                "--build",
+                "-d",
+            ])
             .current_dir(&repo_root)
             .status()
             .context("failed to run docker compose up")?;
@@ -76,7 +86,14 @@ async fn compose_dev_smoke_tests() -> Result<()> {
 
     if teardown {
         let _ = Command::new("docker")
-            .args(["compose", "-f", "docker-compose.yml", "-f", "docker-compose.dev.yml", "down"])
+            .args([
+                "compose",
+                "-f",
+                "docker-compose.yml",
+                "-f",
+                "docker-compose.dev.yml",
+                "down",
+            ])
             .current_dir(&repo_root)
             .status();
     }

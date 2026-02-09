@@ -47,7 +47,10 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
             .route("/users", web::post().to(handlers::create_user))
             .route("/users/{username}", web::get().to(handlers::get_user))
             .route("/users/{username}", web::put().to(handlers::update_user))
-            .route("/users/{username}", web::delete().to(handlers::delete_user_handler))
+            .route(
+                "/users/{username}",
+                web::delete().to(handlers::delete_user_handler),
+            )
             // Audit log routes
             .route("/audit/logs", web::get().to(handlers::get_audit_logs))
             // Cluster routes

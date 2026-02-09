@@ -13,23 +13,23 @@ pub enum Permission {
     ContainerStart,
     ContainerStop,
     ContainerSnapshot,
-    
+
     // Cluster permissions
     ClusterRead,
     ClusterWrite,
     ClusterJoin,
     ClusterLeave,
-    
+
     // Storage permissions
     StorageRead,
     StorageWrite,
     StorageDelete,
-    
+
     // Network permissions
     NetworkRead,
     NetworkWrite,
     NetworkDelete,
-    
+
     // System permissions
     SystemRead,
     SystemWrite,
@@ -189,7 +189,7 @@ impl UserStore {
         if username == "admin" {
             return Err("Cannot delete admin user");
         }
-        
+
         if self.users.remove(username).is_some() {
             Ok(())
         } else {
@@ -275,10 +275,10 @@ mod tests {
     #[test]
     fn test_user_store() {
         let mut store = UserStore::new();
-        
+
         // Default admin should exist
         assert!(store.get_user("admin").is_some());
-        
+
         // Add a new user
         let user = User {
             id: Uuid::new_v4(),
@@ -291,13 +291,13 @@ mod tests {
             updated_at: chrono::Utc::now(),
         };
         store.add_user(user);
-        
+
         assert!(store.get_user("testuser").is_some());
         assert_eq!(store.list_users().len(), 2);
-        
+
         // Cannot delete admin
         assert!(store.delete_user("admin").is_err());
-        
+
         // Can delete other users
         assert!(store.delete_user("testuser").is_ok());
         assert_eq!(store.list_users().len(), 1);
