@@ -61,7 +61,6 @@ crates/web-ui/node_modules/
 crates/web-ui/dist/
 crates/web-ui/.next/
 crates/web-ui/build/
-crates/web-ui/package-lock.json
 crates/web-ui/yarn.lock
 crates/web-ui/.vite/
 
