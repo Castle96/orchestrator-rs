@@ -81,7 +81,7 @@ export default function Containers() {
       cpu_limit: 1,
       memory_limit: 512 * 1024 * 1024, // 512MB in bytes
       disk_limit: 8 * 1024 * 1024 * 1024, // 8GB in bytes
-      network_interfaces: [{ name: 'eth0', bridge: 'lxcbr0' }],
+      network_interfaces: [{ name: 'eth0', type: 'ethernet', status: 'up', bridge: 'lxcbr0' }],
       rootfs_path: '',
       environment: [],
     },
@@ -138,7 +138,7 @@ export default function Containers() {
           cpu_limit: 1,
           memory_limit: 512 * 1024 * 1024,
           disk_limit: 8 * 1024 * 1024 * 1024,
-          network_interfaces: [{ name: 'eth0', bridge: 'lxcbr0' }],
+      network_interfaces: [{ name: 'eth0', type: 'ethernet', status: 'up', bridge: 'lxcbr0' }],
           rootfs_path: '',
           environment: [],
         },

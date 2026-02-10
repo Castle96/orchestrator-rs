@@ -17,9 +17,16 @@ interface NetworkInterface {
   status: 'up' | 'down'
   ip_address?: string
   mac_address?: string
+  speed?: number
+  mtu?: number
+  stp_enabled?: boolean
+  bridge?: string
+  bridge_name?: string
+  vlan_id?: number
+  dhcp_enabled?: boolean
 }
 
-const API_BASE_URL = (import.meta as ImportMeta).env?.VITE_API_URL || '/api/v1'
+const API_BASE_URL = (import.meta as unknown as ImportMeta).env?.VITE_API_URL || '/api/v1'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
