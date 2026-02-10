@@ -161,7 +161,7 @@ jobs:
         uses: docker/setup-qemu-action@v2
       
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
       
       - name: Build API runtime image
         uses: docker/build-push-action@v5
@@ -197,9 +197,16 @@ jobs:
         run: |
           for i in $(seq 1 60); do
             if curl -fsS http://localhost:8080/health -o /tmp/health.json; then
-              if grep -q 'healthy' /tmp/health.json || grep -q 'skipped system checks in dev mode' /tmp/health.json; then
+              echo "Health check response:"
+              cat /tmp/health.json
+              echo ""
+              if grep -q '"status":"healthy"' /tmp/health.json; then
                 echo 'API healthy' && exit 0
+              elif grep -q 'skipped system checks in dev mode' /tmp/health.json; then
+                echo 'API healthy (dev mode)' && exit 0
               fi
+            else
+              echo "Health check failed, retrying..."
             fi
             sleep 2
           done
