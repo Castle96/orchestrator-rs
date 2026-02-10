@@ -11,7 +11,6 @@ import {
   TableHead,
   TableRow,
   Chip,
-  CircularProgress,
   Button,
   Dialog,
   DialogTitle,
@@ -33,13 +32,9 @@ import {
   Add as AddIcon,
   Refresh as RefreshIcon,
   Settings as SettingsIcon,
-  Memory as MemoryIcon,
-  Storage as StorageIcon,
-  NetworkCheck as NetworkCheckIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Warning as WarningIcon,
-  MoreVert as MoreVertIcon,
 } from '@mui/icons-material'
 import { clusterApi, Node } from '../services/api'
 
@@ -59,7 +54,7 @@ export default function Cluster() {
     refetchInterval: 10000, // Refresh every 10 seconds
   })
 
-  const { data: clusterStatus, isLoading: statusLoading } = useQuery({
+  const { data: clusterStatus } = useQuery({
     queryKey: ['cluster-status'],
     queryFn: () => clusterApi.status().then((res) => res.data),
     refetchInterval: 10000,
@@ -78,12 +73,12 @@ export default function Cluster() {
       })
       setNotification({ open: true, message: 'Node joined cluster successfully', severity: 'success' })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setNotification({ open: true, message: `Failed to join cluster: ${error.message}`, severity: 'error' })
     },
   })
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): 'success' | 'error' | 'warning' | 'info' | 'primary' | 'secondary' | 'default' => {
     switch (status) {
       case 'online':
         return 'success'
@@ -161,7 +156,7 @@ export default function Cluster() {
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: getStatusColor(clusterStatus?.status || 'unknown') as any, mr: 2 }}>
+                <Avatar sx={{ bgcolor: getStatusColor(clusterStatus?.status || 'unknown'), mr: 2 }}>
                   {getStatusIcon(clusterStatus?.status || 'unknown')}
                 </Avatar>
                 <Box>
@@ -318,7 +313,7 @@ export default function Cluster() {
                     <TableCell>
                       <Chip
                         label={node.status}
-                        color={getStatusColor(node.status) as any}
+                        color={getStatusColor(node.status)}
                         size="small"
                         sx={{ fontWeight: 'medium' }}
                       />

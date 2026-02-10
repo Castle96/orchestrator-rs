@@ -20,7 +20,6 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  CircularProgress,
   Grid,
   Card,
   CardContent,
@@ -48,7 +47,7 @@ import { storageApi, StoragePool } from '../services/api'
 export default function Storage() {
   const queryClient = useQueryClient()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [selectedPool, setSelectedPool] = useState<StoragePool | null>(null)
+  
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' })
   
   const [newPool, setNewPool] = useState({
@@ -71,7 +70,7 @@ export default function Storage() {
       setNewPool({ name: '', storage_type: 'local', path: '' })
       setNotification({ open: true, message: 'Storage pool created successfully', severity: 'success' })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setNotification({ open: true, message: `Failed to create storage pool: ${error.message}`, severity: 'error' })
     },
   })
@@ -97,7 +96,7 @@ export default function Storage() {
     }
   }
 
-  const getStorageColor = (type: string) => {
+  const getStorageColor = (type: string): 'primary' | 'success' | 'error' | 'warning' | 'info' | 'secondary' | 'default' => {
     switch (type) {
       case 'local':
         return 'primary'
@@ -115,7 +114,7 @@ export default function Storage() {
     return Math.round((used / total) * 100)
   }
 
-  const getUsageColor = (percentage: number) => {
+  const getUsageColor = (percentage: number): 'error' | 'warning' | 'success' | 'info' | 'primary' | 'secondary' | 'default' => {
     if (percentage >= 90) return 'error'
     if (percentage >= 75) return 'warning'
     return 'success'
@@ -270,7 +269,7 @@ export default function Storage() {
                     <TableRow key={pool.id} hover>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ bgcolor: getStorageColor(pool.storage_type) as any, mr: 2, width: 32, height: 32 }}>
+                          <Avatar sx={{ bgcolor: getStorageColor(pool.storage_type), mr: 2, width: 32, height: 32 }}>
                             {getStorageIcon(pool.storage_type)}
                           </Avatar>
                           <Box>
@@ -286,7 +285,7 @@ export default function Storage() {
                       <TableCell>
                         <Chip
                           label={pool.storage_type.toUpperCase()}
-                          color={getStorageColor(pool.storage_type) as any}
+                          color={getStorageColor(pool.storage_type)}
                           size="small"
                           sx={{ fontWeight: 'medium' }}
                         />
@@ -309,7 +308,7 @@ export default function Storage() {
                           <LinearProgress
                             variant="determinate"
                             value={usagePercentage}
-                            color={getUsageColor(usagePercentage) as any}
+                            color={getUsageColor(usagePercentage)}
                             sx={{ mt: 0.5, height: 4 }}
                           />
                         </Box>
@@ -327,7 +326,7 @@ export default function Storage() {
                           <LinearProgress
                             variant="determinate"
                             value={usagePercentage}
-                            color={getUsageColor(usagePercentage) as any}
+                            color={getUsageColor(usagePercentage)}
                             sx={{ mt: 0.5, height: 4 }}
                           />
                         </Box>

@@ -1,0 +1,159 @@
+groups:
+  - name: arm-hypervisor-alerts
+    rules:
+      # API Performance Alerts
+      - alert: HighAPIErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: arm-hypervisor
+        annotations:
+          summary: "High API error rate detected"
+          description: "API error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+
+      - alert: HighAPILatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: arm-hypervisor
+        annotations:
+          summary: "High API latency detected"
+          description: "95th percentile latency is {{ $value }}s"
+
+      # Container Management Alerts
+      - alert: ContainerCreationFailures
+        expr: rate(container_operations_failed_total{operation="create"}[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: critical
+          service: arm-hypervisor
+        annotations:
+          summary: "High container creation failure rate"
+          description: "Container creation failures: {{ $value }} per second"
+
+      - alert: TooManyFailedOperations
+        expr: rate(container_operations_failed_total[5m]) > 1
+        for: 2m
+        labels:
+          severity: warning
+          service: arm-hypervisor
+        annotations:
+          summary: "High container operation failure rate"
+          description: "Failed operations: {{ $value }} per second"
+
+      # Cluster Health Alerts
+      - alert: ClusterNodeDown
+        expr: cluster_node_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: arm-hypervisor
+        annotations:
+          summary: "Cluster node is down"
+          description: "Node {{ $labels.node }} has been down for more than 1 minute"
+
+      - alert: InsufficientClusterNodes
+        expr: cluster_nodes_total < 3
+        for: 5m
+        labels:
+          severity: warning
+          service: arm-hypervisor
+        annotations:
+          summary: "Insufficient cluster nodes"
+          description: "Only {{ $value }} nodes are available, minimum 3 recommended for HA"
+
+      # Resource Usage Alerts
+      - alert: HighCPUUsage
+        expr: cpu_usage_percentage > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: arm-hypervisor
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}% on {{ $labels.node }}"
+
+      - alert: HighMemoryUsage
+        expr: (memory_usage_bytes / memory_total_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: arm-hypervisor
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}% on {{ $labels.node }}"
+
+      - alert: LowDiskSpace
+        expr: (disk_usage_bytes / disk_total_bytes) * 100 > 85
+        for: 5m
+        labels:
+          severity: critical
+          service: arm-hypervisor
+        annotations:
+          summary: "Low disk space"
+          description: "Disk usage is {{ $value }}% on {{ $labels.mountpoint }}"
+
+      # Storage Alerts
+      - alert: StoragePoolOffline
+        expr: storage_pool_up == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: arm-hypervisor
+        annotations:
+          summary: "Storage pool is offline"
+          description: "Storage pool {{ $labels.pool }} is offline"
+
+      - alert: StoragePoolAlmostFull
+        expr: (storage_pool_used_bytes / storage_pool_total_bytes) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: arm-hypervisor
+        annotations:
+          summary: "Storage pool almost full"
+          description: "Storage pool {{ $labels.pool }} is {{ $value }}% full"
+
+      # Service Health Alerts
+      - alert: ServiceDown
+        expr: up{job="arm-hypervisor"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: arm-hypervisor
+        annotations:
+          summary: "ARM Hypervisor service is down"
+          description: "The ARM Hypervisor service has been down for more than 1 minute"
+
+      - alert: TooManyRestartingContainers
+        expr: rate(container_restarts_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: arm-hypervisor
+        annotations:
+          summary: "High container restart rate"
+          description: "Container restart rate: {{ $value }} per second"
+
+      # Network Alerts
+      - alert: NetworkInterfaceDown
+        expr: network_interface_up == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: arm-hypervisor
+        annotations:
+          summary: "Network interface is down"
+          description: "Network interface {{ $labels.interface }} on {{ $labels.node }} is down"
+
+      - alert: HighNetworkErrorRate
+        expr: rate(network_errors_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: arm-hypervisor
+        annotations:
+          summary: "High network error rate"
+          description: "Network errors: {{ $value }} per second on {{ $labels.interface }}"

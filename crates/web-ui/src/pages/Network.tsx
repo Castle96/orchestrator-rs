@@ -4,12 +4,6 @@ import {
   Box,
   Typography,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
   Dialog,
   DialogTitle,
@@ -25,7 +19,6 @@ import {
   Avatar,
   Chip,
   IconButton,
-  Tooltip,
   Alert,
   Snackbar,
   List,
@@ -33,6 +26,7 @@ import {
   ListItemText,
   ListItemIcon,
   Divider,
+  LinearProgress,
 } from '@mui/material'
 import {
   Network as NetworkIcon,
@@ -45,7 +39,6 @@ import {
   Lan as LanIcon,
   Wifi as WifiIcon,
   Ethernet as EthernetIcon,
-  Security as SecurityIcon,
 } from '@mui/icons-material'
 import { networkApi, Bridge } from '../services/api'
 
@@ -62,7 +55,7 @@ interface NetworkInterface {
 export default function Network() {
   const queryClient = useQueryClient()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [selectedBridge, setSelectedBridge] = useState<Bridge | null>(null)
+  
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' })
   
   const [newBridge, setNewBridge] = useState({
@@ -92,12 +85,12 @@ export default function Network() {
       setNewBridge({ name: '', ip_address: '', stp_enabled: false })
       setNotification({ open: true, message: 'Bridge created successfully', severity: 'success' })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setNotification({ open: true, message: `Failed to create bridge: ${error.message}`, severity: 'error' })
     },
   })
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): 'success' | 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'warning' => {
     return status === 'up' ? 'success' : 'default'
   }
 
@@ -317,7 +310,7 @@ export default function Network() {
                       />
                       <Chip
                         label={iface.status}
-                        color={getStatusColor(iface.status) as any}
+                        color={getStatusColor(iface.status)}
                         size="small"
                         sx={{ mr: 1 }}
                       />

@@ -29,7 +29,7 @@ import {
   Stop as StopIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material'
-import { containerApi, clusterApi, Container } from '../services/api'
+import { containerApi, clusterApi } from '../services/api'
 
 interface SystemStats {
   cpu_usage: number
@@ -50,7 +50,7 @@ export default function Dashboard() {
     refetchInterval: 5000, // Refresh every 5 seconds
   })
 
-  const { data: clusterStatus, isLoading: clusterLoading } = useQuery({
+  const { data: clusterStatus } = useQuery({
     queryKey: ['cluster-status'],
     queryFn: () => clusterApi.status().then((res) => res.data),
     refetchInterval: 10000, // Refresh every 10 seconds
@@ -75,7 +75,7 @@ export default function Dashboard() {
 
   const runningContainers = containers?.filter((c) => c.status === 'running').length || 0
   const stoppedContainers = containers?.filter((c) => c.status === 'stopped').length || 0
-  const errorContainers = containers?.filter((c) => c.status === 'error').length || 0
+  
 
   const formatBytes = (bytes: number) => {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -89,7 +89,7 @@ export default function Dashboard() {
     return mbps.toFixed(1) + ' MB/s'
   }
 
-  const getClusterHealthColor = (status: string) => {
+  const getClusterHealthColor = (status: string): 'success' | 'error' | 'warning' | 'info' | 'primary' | 'secondary' | 'default' => {
     if (status === 'healthy') return 'success'
     if (status === 'unhealthy') return 'error'
     return 'warning'
@@ -279,7 +279,7 @@ export default function Dashboard() {
               </Box>
               <Chip 
                 label={clusterStatus?.status || 'Unknown'} 
-                color={getClusterHealthColor(clusterStatus?.status || 'unknown') as any}
+                color={getClusterHealthColor(clusterStatus?.status || 'unknown')}
                 size="small"
                 sx={{ ml: 3 }}
               />

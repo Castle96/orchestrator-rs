@@ -18,7 +18,6 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  CircularProgress,
   Grid,
   FormControl,
   InputLabel,
@@ -42,7 +41,6 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import ComputerIcon from '@mui/icons-material/Computer'
 import MemoryIcon from '@mui/icons-material/Memory'
 import StorageIcon from '@mui/icons-material/Storage'
-import NetworkIcon from '@mui/icons-material/Network'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { containerApi, Container, CreateContainerRequest } from '../services/api'
 
@@ -101,7 +99,7 @@ export default function Containers() {
       queryClient.invalidateQueries({ queryKey: ['containers'] })
       setNotification({ open: true, message: 'Container started successfully', severity: 'success' })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setNotification({ open: true, message: `Failed to start container: ${error.message}`, severity: 'error' })
     },
   })
@@ -112,7 +110,7 @@ export default function Containers() {
       queryClient.invalidateQueries({ queryKey: ['containers'] })
       setNotification({ open: true, message: 'Container stopped successfully', severity: 'success' })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setNotification({ open: true, message: `Failed to stop container: ${error.message}`, severity: 'error' })
     },
   })
@@ -123,7 +121,7 @@ export default function Containers() {
       queryClient.invalidateQueries({ queryKey: ['containers'] })
       setNotification({ open: true, message: 'Container deleted successfully', severity: 'success' })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setNotification({ open: true, message: `Failed to delete container: ${error.message}`, severity: 'error' })
     },
   })
@@ -147,12 +145,12 @@ export default function Containers() {
       })
       setNotification({ open: true, message: 'Container created successfully', severity: 'success' })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setNotification({ open: true, message: `Failed to create container: ${error.message}`, severity: 'error' })
     },
   })
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): 'success' | 'default' | 'error' | 'warning' | 'info' | 'primary' | 'secondary' => {
     switch (status) {
       case 'running':
         return 'success'
@@ -231,7 +229,7 @@ export default function Containers() {
                   <TableCell>
                     <Chip
                       label={container.status}
-                      color={getStatusColor(container.status) as any}
+                      color={getStatusColor(container.status)}
                       size="small"
                       sx={{ fontWeight: 'medium' }}
                     />
@@ -509,7 +507,7 @@ export default function Containers() {
                 </Typography>
                 <Chip
                   label={selectedContainer.status}
-                  color={getStatusColor(selectedContainer.status) as any}
+                  color={getStatusColor(selectedContainer.status)}
                   size="small"
                 />
               </Grid>
