@@ -308,7 +308,7 @@ export default function Storage() {
                           <LinearProgress
                             variant="determinate"
                             value={usagePercentage}
-                            color={getUsageColor(usagePercentage) as any}
+                            color={getUsageColor(usagePercentage) as 'error' | 'warning' | 'success' | 'info' | 'secondary' | 'primary' | 'inherit'}
                             sx={{ mt: 0.5, height: 4 }}
                           />
                         </Box>
@@ -326,7 +326,7 @@ export default function Storage() {
                           <LinearProgress
                             variant="determinate"
                             value={usagePercentage}
-                            color={getUsageColor(usagePercentage) as any}
+                            color={getUsageColor(usagePercentage) as 'error' | 'warning' | 'success' | 'info' | 'secondary' | 'primary' | 'inherit'}
                             sx={{ mt: 0.5, height: 4 }}
                           />
                         </Box>

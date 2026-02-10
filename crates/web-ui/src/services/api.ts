@@ -1,6 +1,25 @@
 import axios from 'axios'
 
-const API_BASE_URL = (import.meta as any).env.VITE_API_URL || '/api/v1'
+interface ImportMetaEnv {
+  env?: {
+    VITE_API_URL?: string
+    [key: string]: string | undefined
+  }
+}
+
+interface ImportMeta {
+  env: ImportMetaEnv['env']
+}
+
+interface NetworkInterface {
+  name: string
+  type: 'ethernet' | 'wifi' | 'bridge'
+  status: 'up' | 'down'
+  ip_address?: string
+  mac_address?: string
+}
+
+const API_BASE_URL = (import.meta as ImportMeta).env?.VITE_API_URL || '/api/v1'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -21,7 +40,7 @@ export interface Container {
     cpu_limit?: number
     memory_limit?: number
     disk_limit?: number
-    network_interfaces: any[]
+    network_interfaces: NetworkInterface[]
     rootfs_path: string
     environment: [string, string][]
   }
@@ -34,7 +53,7 @@ export interface CreateContainerRequest {
     cpu_limit?: number
     memory_limit?: number
     disk_limit?: number
-    network_interfaces: any[]
+    network_interfaces: NetworkInterface[]
     rootfs_path: string
     environment: [string, string][]
   }
@@ -99,7 +118,7 @@ export const storageApi = {
 }
 
 export const networkApi = {
-  listInterfaces: () => api.get<{ interfaces: any[] }>('/network'),
+  listInterfaces: () => api.get<{ interfaces: NetworkInterface[] }>('/network'),
   listBridges: () => api.get<{ bridges: string[] }>('/network/bridges'),
   createBridge: (data: { name: string; ip_address?: string; stp_enabled: boolean }) =>
     api.post<Bridge>('/network/bridges', data),
