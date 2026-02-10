@@ -227,13 +227,15 @@ jobs:
               echo "Health check response:"
               cat /tmp/health.json
               echo ""
-              if grep -q '"status":"healthy"' /tmp/health.json; then
+              if grep -q '"status":"healthy"' /tmp/health.json || grep -q 'skipped system checks in dev mode' /tmp/health.json; then
                 echo 'API healthy' && exit 0
-              elif grep -q 'skipped system checks in dev mode' /tmp/health.json; then
-                echo 'API healthy (dev mode)' && exit 0
+              else
+                echo "Health check failed, retrying..."
+                docker compose -f docker-compose.yml -f docker-compose.dev.yml ps
+                docker compose -f docker-compose.yml -f docker-compose.dev.yml logs --tail=10 api
               fi
             else
-              echo "Health check failed, checking container status..."
+              echo "Health check failed, retrying..."
               docker compose -f docker-compose.yml -f docker-compose.dev.yml ps
               docker compose -f docker-compose.yml -f docker-compose.dev.yml logs --tail=10 api
             fi
