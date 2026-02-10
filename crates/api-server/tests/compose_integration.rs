@@ -53,27 +53,75 @@ async fn compose_dev_smoke_tests() -> Result<()> {
         // Wait for API to become healthy (up to 120s)
         let client = reqwest::Client::new();
         let deadline = Instant::now() + Duration::from_secs(120);
+        let mut attempts = 0;
+        
+        println!("Waiting for API to become healthy...");
+        
         loop {
+            attempts += 1;
             if Instant::now() > deadline {
-                bail!("timeout waiting for API health endpoint");
+                bail!("timeout waiting for API health endpoint after {} attempts", attempts);
             }
-            if let Ok(resp) = client.get("http://localhost:8080/health").send().await {
-                if resp.status().is_success() {
-                    let text = resp.text().await.unwrap_or_default();
-                    if text.contains("healthy") || text.contains("skipped system checks") {
-                        break;
+            
+            println!("Attempt {}: Checking health endpoint...", attempts);
+            
+            match client.get("http://localhost:8080/health").send().await {
+                Ok(resp) => {
+                    if resp.status().is_success() {
+                        let text = resp.text().await.unwrap_or_default();
+                        println!("Health response: {}", text);
+                        if text.contains("healthy") || text.contains("skipped system checks") {
+                            println!("API is healthy! ✅");
+                            break;
+                        } else {
+                            println!("API responded but not healthy yet: {}", text);
+                        }
+                    } else {
+                        println!("Health check failed with status: {}", resp.status());
                     }
                 }
+                Err(e) => {
+                    println!("Health check request failed: {}", e);
+                }
             }
-            tokio::time::sleep(Duration::from_secs(2)).await;
+            
+            if attempts < 60 {  // Max 2 minutes with 2-second intervals
+                tokio::time::sleep(Duration::from_secs(2)).await;
+            } else {
+                bail!("timeout waiting for API health endpoint after {} attempts", attempts);
+            }
         }
 
         // Basic smoke requests
-        let resp = client.get("http://localhost:8080/health").send().await?;
-        if !resp.status().is_success() {
-            bail!("/health returned non-success");
+        println!("Running smoke tests...");
+        
+        match client.get("http://localhost:8080/health").send().await {
+            Ok(resp) => {
+                if resp.status().is_success() {
+                    println!("✅ /health endpoint: {}", resp.status());
+                } else {
+                    bail!("/health returned non-success: {}", resp.status());
+                }
+            }
+            Err(e) => {
+                bail!("Health check failed: {}", e);
+            }
         }
-        let _ = resp.text().await.unwrap_or_default();
+
+        match client.get("http://localhost:8080/ready").send().await {
+            Ok(resp) => {
+                if resp.status().is_success() {
+                    println!("✅ /ready endpoint: {}", resp.status());
+                } else {
+                    bail!("/ready returned non-success: {}", resp.status());
+                }
+            }
+            Err(e) => {
+                bail!("Ready check failed: {}", e);
+            }
+        }
+        
+        println!("✅ All smoke tests passed!");
 
         let resp = client.get("http://localhost:8080/ready").send().await?;
         if !resp.status().is_success() {
