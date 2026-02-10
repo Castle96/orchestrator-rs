@@ -30,6 +30,7 @@ toml = "0.8"
 serde_yaml = "0.9"
 num_cpus = "1.16"
 gethostname = "0.4"
+nix = { version = "0.27", features = ["user"] }
 
 [workspace.package]
 version = "0.1.0"
