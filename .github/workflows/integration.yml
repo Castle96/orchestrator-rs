@@ -1,0 +1,52 @@
+name: Integration (Docker Compose)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *" # nightly
+
+jobs:
+  compose:
+    name: Compose Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create env file
+        run: |
+          cat > .env.dev <<'EOF'
+          JWT_SECRET=ci-integration-secret
+          SKIP_SYSTEM_CHECKS=true
+          RUST_LOG=info
+          EOF
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build & start stack
+        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
+
+      - name: Wait for API health
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/health | grep -q healthy; then
+              echo "API healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs api
+          exit 1
+
+      - name: Smoke tests
+        run: |
+          curl -f http://localhost:8080/health
+          curl -f http://localhost:8080/ready
+
+      - name: Rust integration tests
+        run: CI=1 RUN_COMPOSE_TESTS=0 cargo test -p api-server --test compose_integration -- --nocapture
+
+      - name: Teardown
+        if: always()
+        run: docker compose down
