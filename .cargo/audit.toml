@@ -4,4 +4,4 @@
 # We monitor for security issues and the alternatives are not yet mature
 # This dependency is used only for TLS certificate loading
 [advisories]
-RUSTSEC-2025-0134 = "accepted"
+ignore = ["RUSTSEC-2025-0134"]

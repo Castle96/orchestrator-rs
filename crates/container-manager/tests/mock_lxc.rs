@@ -30,9 +30,9 @@ async fn test_mock_container_create_and_list() {
         }
     };
 
-    // lxc-list: print the state file if exists
+    // lxc-ls: print the state file if exists
     write_script(
-        "lxc-list",
+        "lxc-ls",
         "#!/bin/sh\nif [ -f \"$LXC_STATE_FILE\" ]; then cat \"$LXC_STATE_FILE\"; fi\n",
     );
 

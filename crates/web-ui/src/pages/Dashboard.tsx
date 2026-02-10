@@ -21,7 +21,7 @@ import {
   Computer as ComputerIcon,
   Memory as MemoryIcon,
   Storage as StorageIcon,
-  Network as NetworkIcon,
+  Router as NetworkIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Warning as WarningIcon,

@@ -12,7 +12,7 @@ import {
   TextField,
   Checkbox,
   FormControlLabel,
-  CircularProgress,
+
   Grid,
   Card,
   CardContent,
@@ -29,7 +29,7 @@ import {
   LinearProgress,
 } from '@mui/material'
 import {
-  Network as NetworkIcon,
+  Router as NetworkIcon,
   Add as AddIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
@@ -38,9 +38,9 @@ import {
   Router as RouterIcon,
   Lan as LanIcon,
   Wifi as WifiIcon,
-  Ethernet as EthernetIcon,
+  DeviceHub as EthernetIcon,
 } from '@mui/icons-material'
-import { networkApi, Bridge } from '../services/api'
+import { networkApi } from '../services/api'
 
 interface NetworkInterface {
   name: string

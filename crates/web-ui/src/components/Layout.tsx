@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Box,
@@ -7,7 +7,7 @@ import {
   Toolbar,
   List,
   Typography,
-  Divider,
+
   ListItem,
   ListItemButton,
   ListItemIcon,

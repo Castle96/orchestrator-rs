@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Box,
@@ -42,7 +42,7 @@ import {
   Folder as FolderIcon,
   SdStorage as SdStorageIcon,
 } from '@mui/icons-material'
-import { storageApi, StoragePool } from '../services/api'
+import { storageApi } from '../services/api'
 
 export default function Storage() {
   const queryClient = useQueryClient()
@@ -308,7 +308,7 @@ export default function Storage() {
                           <LinearProgress
                             variant="determinate"
                             value={usagePercentage}
-                            color={getUsageColor(usagePercentage)}
+                            color={getUsageColor(usagePercentage) as any}
                             sx={{ mt: 0.5, height: 4 }}
                           />
                         </Box>
@@ -326,7 +326,7 @@ export default function Storage() {
                           <LinearProgress
                             variant="determinate"
                             value={usagePercentage}
-                            color={getUsageColor(usagePercentage)}
+                            color={getUsageColor(usagePercentage) as any}
                             sx={{ mt: 0.5, height: 4 }}
                           />
                         </Box>
@@ -340,7 +340,7 @@ export default function Storage() {
                         <Tooltip title="Edit Pool">
                           <IconButton
                             size="small"
-                            onClick={() => setSelectedPool(pool)}
+                            onClick={() => {/* TODO: Implement edit pool */}}
                           >
                             <EditIcon />
                           </IconButton>
