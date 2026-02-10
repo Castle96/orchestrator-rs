@@ -187,13 +187,13 @@ jobs:
           EOF
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Compose up
-        uses: docker/compose-action@v2
-        with:
-          files: docker-compose.yml,docker-compose.dev.yml
-          args: up --build -d
+        uses: docker/setup-buildx-action@v3
+      - name: Build and start services
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 
       - name: Wait for API healthy (up to 120s)
         run: |
@@ -214,10 +214,8 @@ jobs:
           curl -f http://localhost:8080/ready
 
       - name: Compose down
-        uses: docker/compose-action@v2
-        with:
-          files: docker-compose.yml,docker-compose.dev.yml
-          args: down
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 
       - name: Run integration test against compose stack
         run: |

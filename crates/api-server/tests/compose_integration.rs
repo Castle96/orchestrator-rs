@@ -9,8 +9,7 @@ async fn compose_dev_smoke_tests() -> Result<()> {
     // This test is intentionally opt-in. Set RUN_COMPOSE_TESTS=1 to allow the test
     // to bring up the docker-compose dev stack. Otherwise the test will attempt to
     // hit localhost:8080 which must already be running (e.g. developer started it).
-    let run_compose =
-        env::var("RUN_COMPOSE_TESTS").unwrap_or_default() == "1" || env::var("CI").is_ok();
+    let run_compose = env::var("RUN_COMPOSE_TESTS").unwrap_or_default() == "1";
 
     let repo_root = env::var("ORCHESTRATOR_RS_ROOT").unwrap_or_else(|_| {
         // default to project root relative to crate (two levels up)
@@ -54,17 +53,20 @@ async fn compose_dev_smoke_tests() -> Result<()> {
         let client = reqwest::Client::new();
         let deadline = Instant::now() + Duration::from_secs(120);
         let mut attempts = 0;
-        
+
         println!("Waiting for API to become healthy...");
-        
+
         loop {
             attempts += 1;
             if Instant::now() > deadline {
-                bail!("timeout waiting for API health endpoint after {} attempts", attempts);
+                bail!(
+                    "timeout waiting for API health endpoint after {} attempts",
+                    attempts
+                );
             }
-            
+
             println!("Attempt {}: Checking health endpoint...", attempts);
-            
+
             match client.get("http://localhost:8080/health").send().await {
                 Ok(resp) => {
                     if resp.status().is_success() {
@@ -84,17 +86,21 @@ async fn compose_dev_smoke_tests() -> Result<()> {
                     println!("Health check request failed: {}", e);
                 }
             }
-            
-            if attempts < 60 {  // Max 2 minutes with 2-second intervals
+
+            if attempts < 60 {
+                // Max 2 minutes with 2-second intervals
                 tokio::time::sleep(Duration::from_secs(2)).await;
             } else {
-                bail!("timeout waiting for API health endpoint after {} attempts", attempts);
+                bail!(
+                    "timeout waiting for API health endpoint after {} attempts",
+                    attempts
+                );
             }
         }
 
         // Basic smoke requests
         println!("Running smoke tests...");
-        
+
         match client.get("http://localhost:8080/health").send().await {
             Ok(resp) => {
                 if resp.status().is_success() {
@@ -120,7 +126,7 @@ async fn compose_dev_smoke_tests() -> Result<()> {
                 bail!("Ready check failed: {}", e);
             }
         }
-        
+
         println!("✅ All smoke tests passed!");
 
         let resp = client.get("http://localhost:8080/ready").send().await?;
