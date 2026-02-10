@@ -184,6 +184,7 @@ jobs:
           cat > .env.dev <<'EOF'
           JWT_SECRET=ci-test-secret-012345678901234567890123
           SKIP_SYSTEM_CHECKS=true
+          RUST_LOG=info
           EOF
 
       - name: Set up Docker Buildx
@@ -192,10 +193,25 @@ jobs:
       - name: Build and start services
         run: |
           docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
+          
+      - name: Debug container status
+        run: |
+          echo "=== Docker Compose Status ==="
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml ps
+          
+          echo "=== API Container Logs ==="
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml logs api
 
+      - name: Wait for services to start (30s)
+        run: |
+          echo "Waiting for services to start..."
+          sleep 30
+          
       - name: Wait for API healthy (up to 120s)
         run: |
+          echo "=== Starting Health Check Loop ==="
           for i in $(seq 1 60); do
+            echo "Health check attempt $i/60..."
             if curl -fsS http://localhost:8080/health -o /tmp/health.json; then
               echo "Health check response:"
               cat /tmp/health.json
@@ -206,7 +222,9 @@ jobs:
                 echo 'API healthy (dev mode)' && exit 0
               fi
             else
-              echo "Health check failed, retrying..."
+              echo "Health check failed, checking container status..."
+              docker compose -f docker-compose.yml -f docker-compose.dev.yml ps
+              docker compose -f docker-compose.yml -f docker-compose.dev.yml logs --tail=10 api
             fi
             sleep 2
           done
